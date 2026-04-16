@@ -1,0 +1,243 @@
+/* ── ticket shell ── */
+.ticket {
+  background: var(--surface);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 0.5px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+  position: relative;
+}
+
+.ticket:hover {
+  border-color: #2a3040;
+  transform: translateY(-2px);
+}
+
+/* ── torn top edge ── */
+.ticketTop {
+  background: var(--bg);
+  height: 14px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ticketTop::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: var(--surface);
+  clip-path: ellipse(54% 100% at 50% 100%);
+}
+
+/* ── center hole ── */
+.ticketHole {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+/* ── dashed divider ── */
+.divider {
+  border: none;
+  border-top: 1.5px dashed var(--border);
+  margin: 0 16px;
+}
+
+/* ── body ── */
+.ticketBody {
+  padding: 16px 16px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quoteText {
+  font-family: 'Amiri', serif;
+  font-size: 14px;
+  color: #d4c5a0;
+  line-height: 1.9;
+  text-align: right;
+  white-space: pre-line;
+}
+
+/* ── inline tags ── */
+.ticketTags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.tTag {
+  background: #0d1520;
+  border: 0.5px solid #1a2535;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: #4a6280;
+}
+
+/* ── footer ── */
+.ticketFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 14px;
+}
+
+.poet {
+  font-size: 11px;
+  color: var(--gold);
+}
+
+.source {
+  font-size: 10px;
+  color: var(--text-muted);
+  direction: ltr;
+}
+
+/* ── torn bottom edge ── */
+.ticketBottom {
+  background: var(--bg);
+  height: 14px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ticketBottom::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: var(--surface);
+  clip-path: ellipse(54% 100% at 50% 0%);
+}
+
+/* ── 3-dots menu button ── */
+.menuBtn {
+  position: absolute;
+  top: 20px;
+  left: 12px;           /* left side in RTL layout */
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.ticket:hover .menuBtn,
+.menuBtn:focus-visible,
+.menuBtn.open {
+  opacity: 1;
+}
+
+.menuBtn:hover,
+.menuBtn.open {
+  background: rgba(201, 168, 76, 0.1);
+  color: var(--gold);
+}
+
+/* ── dropdown ── */
+.dropdown {
+  position: absolute;
+  top: 46px;
+  left: 12px;
+  background: #161d2a;
+  border: 0.5px solid #252f40;
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 50;
+  min-width: 120px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  animation: dropIn 0.12s ease;
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dropItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-dim);
+  direction: rtl;
+  text-align: right;
+  transition: background 0.12s, color 0.12s;
+}
+
+.dropItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+.dropItem.danger {
+  color: #d05060;
+}
+
+.dropItem.danger:hover {
+  background: rgba(208, 80, 96, 0.1);
+  color: #e06070;
+}
+
+/* ── clipboard flash toast ── */
+.toast {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 17, 23, 0.75);
+  border-radius: 12px;
+  z-index: 20;
+  pointer-events: none;
+  animation: toastIn 0.15s ease, toastOut 0.3s ease 0.7s forwards;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.toastLabel {
+  font-family: 'Amiri', serif;
+  font-size: 15px;
+  color: var(--gold);
+  letter-spacing: 0.5px;
+}

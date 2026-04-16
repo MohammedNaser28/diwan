@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ديوان – poetry vault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:#0d1117;min-height:100vh;font-family:sans-serif;direction:rtl;}
+    .app{background:#0d1117;min-height:100vh;overflow:hidden;}
+
+    /* topbar */
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:0.5px solid #1e2530;}
+    .logo{font-family:'Amiri',serif;font-size:22px;color:#c9a84c;letter-spacing:1px;}
+    .top-right{display:flex;align-items:center;gap:10px;}
+    .search-input{background:#111520;border:0.5px solid #1e2530;border-radius:8px;padding:8px 14px;color:#c8d0db;font-size:13px;direction:rtl;outline:none;width:220px;}
+    .search-input::placeholder{color:#3a4455;}
+
+    /* add button */
+    .add-btn{width:38px;height:38px;border-radius:50%;background:#c9a84c;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.15s;}
+    .add-btn:hover{transform:scale(1.08);}
+    .add-btn svg{width:18px;height:18px;stroke:#0d1117;stroke-width:2.5;fill:none;}
+
+    /* filter */
+    .filter-row{display:flex;gap:8px;padding:12px 24px;border-bottom:0.5px solid #1e2530;overflow-x:auto;}
+    .tag{background:#111520;border:0.5px solid #1e2530;border-radius:20px;padding:5px 14px;font-size:12px;color:#6b7a8d;white-space:nowrap;cursor:pointer;}
+    .tag.active{background:#1a1500;border-color:#c9a84c;color:#c9a84c;}
+
+    /* grid */
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:20px 24px;}
+
+    /* ticket card */
+    .ticket{background:#111520;border-radius:12px;overflow:hidden;border:0.5px solid #1e2530;display:flex;flex-direction:column;cursor:pointer;transition:border-color 0.15s,transform 0.15s;}
+    .ticket:hover{border-color:#2a3040;transform:translateY(-2px);}
+
+    /* torn edge top */
+    .ticket-top{background:#0d1117;height:14px;position:relative;}
+    .ticket-top::after{content:'';position:absolute;bottom:0;left:0;right:0;height:14px;background:#111520;border-radius:50% 50% 0 0 / 0 0 100% 100%;clip-path:ellipse(54% 100% at 50% 100%);}
+
+    /* hole */
+    .ticket-hole{width:14px;height:14px;border-radius:50%;background:#0d1117;border:0.5px solid #1e2530;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;}
+
+    /* dashed divider */
+    .ticket-divider{border:none;border-top:1.5px dashed #1e2530;margin:0 16px;}
+
+    /* body */
+    .ticket-body{padding:16px 16px 12px;flex:1;display:flex;flex-direction:column;gap:10px;}
+    .quote-text{font-family:'Amiri',serif;font-size:14px;color:#d4c5a0;line-height:1.9;text-align:right;}
+    .ticket-footer{display:flex;align-items:center;justify-content:space-between;padding:0 16px 14px;}
+    .poet{font-size:11px;color:#c9a84c;}
+    .source{font-size:10px;color:#3a4455;direction:ltr;}
+    .ticket-tags{display:flex;gap:5px;flex-wrap:wrap;}
+    .t-tag{background:#0d1520;border:0.5px solid #1a2535;border-radius:10px;padding:2px 8px;font-size:10px;color:#4a6280;}
+
+    /* ticket bottom torn */
+    .ticket-bottom{background:#0d1117;height:14px;position:relative;}
+    .ticket-bottom::before{content:'';position:absolute;top:0;left:0;right:0;height:14px;background:#111520;border-radius:0 0 50% 50% / 100% 100% 0 0;clip-path:ellipse(54% 100% at 50% 0%);}
+
+    /* add card placeholder */
+    .ticket-add{background:#0d1117;border:1px dashed #1e2530;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;min-height:180px;transition:border-color 0.15s;}
+    .ticket-add:hover{border-color:#c9a84c;}
+    .ticket-add-icon{width:36px;height:36px;border-radius:50%;border:1px dashed #2a3040;display:flex;align-items:center;justify-content:center;}
+    .ticket-add-icon svg{width:16px;height:16px;stroke:#3a4455;stroke-width:2;fill:none;}
+    .ticket-add-label{font-size:12px;color:#3a4455;}
+    .ticket-add:hover .ticket-add-icon{border-color:#c9a84c;}
+    .ticket-add:hover .ticket-add-icon svg{stroke:#c9a84c;}
+    .ticket-add:hover .ticket-add-label{color:#c9a84c;}
+
+    /* modal overlay */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:100;}
+    .overlay.open{display:flex;}
+    .modal{background:#111520;border:0.5px solid #1e2530;border-radius:14px;width:480px;max-width:95%;padding:24px;direction:rtl;}
+    .modal-title{font-family:'Amiri',serif;font-size:20px;color:#c9a84c;margin-bottom:20px;}
+    .form-group{margin-bottom:14px;}
+    .form-label{font-size:12px;color:#6b7a8d;margin-bottom:6px;display:block;}
+    .form-input,.form-textarea{width:100%;background:#0d1117;border:0.5px solid #1e2530;border-radius:8px;padding:9px 12px;color:#c8d0db;font-size:13px;direction:rtl;outline:none;font-family:sans-serif;}
+    .form-textarea{font-family:'Amiri',serif;font-size:15px;line-height:1.9;resize:vertical;min-height:90px;}
+    .form-input:focus,.form-textarea:focus{border-color:#c9a84c44;}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .modal-actions{display:flex;gap:10px;justify-content:flex-start;margin-top:20px;}
+    .btn-save{background:#c9a84c;color:#0d1117;border:none;border-radius:8px;padding:9px 22px;font-size:13px;cursor:pointer;font-weight:500;}
+    .btn-cancel{background:transparent;color:#6b7a8d;border:0.5px solid #1e2530;border-radius:8px;padding:9px 18px;font-size:13px;cursor:pointer;}
+    .btn-save:hover{background:#d4b55a;}
+    .btn-cancel:hover{color:#a0aab8;}
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <div class="topbar">
+    <div class="logo">ديوان</div>
+    <div class="top-right">
+      <input class="search-input" placeholder="ابحث في الأبيات...">
+      <button class="add-btn" onclick="openModal()">
+        <svg viewBox="0 0 18 18"><line x1="9" y1="3" x2="9" y2="15"/><line x1="3" y1="9" x2="15" y2="9"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <div class="tag active">الكل</div>
+    <div class="tag">حكمة</div>
+    <div class="tag">غزل</div>
+    <div class="tag">رثاء</div>
+    <div class="tag">فخر</div>
+    <div class="tag">حنين</div>
+  </div>
+
+  <div class="grid" id="grid">
+
+    <div class="ticket">
+      <div class="ticket-top"><div class="ticket-hole"></div></div>
+      <hr class="ticket-divider">
+      <div class="ticket-body">
+        <div class="quote-text">وما المرءُ إلا حيثُ يجعلُ نفسَهُ<br>فكُن طالبًا في العُلا أعلاها مقاما</div>
+        <div class="ticket-tags"><div class="t-tag">حكمة</div><div class="t-tag">فخر</div></div>
+      </div>
+      <hr class="ticket-divider">
+      <div class="ticket-footer">
+        <span class="poet">المتنبي</span>
+        <span class="source">ديوان المتنبي</span>
+      </div>
+      <div class="ticket-bottom"></div>
+    </div>
+
+    <div class="ticket">
+      <div class="ticket-top"><div class="ticket-hole"></div></div>
+      <hr class="ticket-divider">
+      <div class="ticket-body">
+        <div class="quote-text">أنا البحرُ في أحشائه الدُّرُّ كامنٌ<br>فهل سألوا الغوّاصَ عن صدفاتي</div>
+        <div class="ticket-tags"><div class="t-tag">فخر</div></div>
+      </div>
+      <hr class="ticket-divider">
+      <div class="ticket-footer">
+        <span class="poet">أبو العلاء المعري</span>
+        <span class="source">اللزوميات</span>
+      </div>
+      <div class="ticket-bottom"></div>
+    </div>
+
+    <div class="ticket">
+      <div class="ticket-top"><div class="ticket-hole"></div></div>
+      <hr class="ticket-divider">
+      <div class="ticket-body">
+        <div class="quote-text">على قَدْرِ أهلِ العزمِ تأتي العزائمُ<br>وتأتي على قَدْرِ الكِرامِ المكارمُ</div>
+        <div class="ticket-tags"><div class="t-tag">حكمة</div></div>
+      </div>
+      <hr class="ticket-divider">
+      <div class="ticket-footer">
+        <span class="poet">المتنبي</span>
+        <span class="source">ديوان المتنبي</span>
+      </div>
+      <div class="ticket-bottom"></div>
+    </div>
+
+    <div class="ticket">
+      <div class="ticket-top"><div class="ticket-hole"></div></div>
+      <hr class="ticket-divider">
+      <div class="ticket-body">
+        <div class="quote-text">إذا غامرتَ في شرفٍ مرومٍ<br>فلا تقنع بما دون النجوم</div>
+        <div class="ticket-tags"><div class="t-tag">حكمة</div><div class="t-tag">حنين</div></div>
+      </div>
+      <hr class="ticket-divider">
+      <div class="ticket-footer">
+        <span class="poet">المتنبي</span>
+        <span class="source">ديوان المتنبي</span>
+      </div>
+      <div class="ticket-bottom"></div>
+    </div>
+
+    <div class="ticket">
+      <div class="ticket-top"><div class="ticket-hole"></div></div>
+      <hr class="ticket-divider">
+      <div class="ticket-body">
+        <div class="quote-text">لكلِّ امرئٍ من دهرِهِ ما تعوَّدا<br>وعادةُ سيفِ الدولةِ الطعنُ في العِدا</div>
+        <div class="ticket-tags"><div class="t-tag">فخر</div><div class="t-tag">رثاء</div></div>
+      </div>
+      <hr class="ticket-divider">
+      <div class="ticket-footer">
+        <span class="poet">المتنبي</span>
+        <span class="source">ديوان المتنبي</span>
+      </div>
+      <div class="ticket-bottom"></div>
+    </div>
+
+    <div class="ticket-add" onclick="openModal()">
+      <div class="ticket-add-icon">
+        <svg viewBox="0 0 16 16"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+      </div>
+      <span class="ticket-add-label">إضافة بيت جديد</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- modal -->
+<div class="overlay" id="overlay" onclick="handleOverlay(event)">
+  <div class="modal" id="modal">
+    <div class="modal-title">إضافة بيت جديد</div>
+    <div class="form-group">
+      <label class="form-label">نص البيت</label>
+      <textarea class="form-textarea" id="inp-text" placeholder="اكتب البيت هنا..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">الشاعر</label>
+        <input class="form-input" id="inp-poet" placeholder="اسم الشاعر">
+      </div>
+      <div class="form-group">
+        <label class="form-label">المصدر</label>
+        <input class="form-input" id="inp-source" placeholder="الديوان أو الكتاب">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">الوسوم (مفصولة بفاصلة)</label>
+      <input class="form-input" id="inp-tags" placeholder="حكمة، غزل، فخر">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="addQuote()">حفظ البيت</button>
+      <button class="btn-cancel" onclick="closeModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openModal(){document.getElementById('overlay').classList.add('open');}
+  function closeModal(){document.getElementById('overlay').classList.remove('open');}
+  function handleOverlay(e){if(e.target===document.getElementById('overlay'))closeModal();}
+
+  function addQuote(){
+    const text=document.getElementById('inp-text').value.trim();
+    const poet=document.getElementById('inp-poet').value.trim();
+    const source=document.getElementById('inp-source').value.trim();
+    const tagsRaw=document.getElementById('inp-tags').value.trim();
+    if(!text)return;
+
+    const tags=tagsRaw?tagsRaw.split(/[,،]+/).map(t=>t.trim()).filter(Boolean):[];
+    const tagsHTML=tags.map(t=>`<div class="t-tag">${t}</div>`).join('');
+    const linesHTML=text.split('\n').join('<br>');
+
+    const ticket=document.createElement('div');
+    ticket.className='ticket';
+    ticket.innerHTML=`
+      <div class="ticket-top"><div class="ticket-hole"></div></div>
+      <hr class="ticket-divider">
+      <div class="ticket-body">
+        <div class="quote-text">${linesHTML}</div>
+        ${tagsHTML?`<div class="ticket-tags">${tagsHTML}</div>`:''}
+      </div>
+      <hr class="ticket-divider">
+      <div class="ticket-footer">
+        <span class="poet">${poet||'—'}</span>
+        <span class="source">${source||''}</span>
+      </div>
+      <div class="ticket-bottom"></div>
+    `;
+
+    const grid=document.getElementById('grid');
+    const placeholder=grid.querySelector('.ticket-add');
+    grid.insertBefore(ticket,placeholder);
+
+    ['inp-text','inp-poet','inp-source','inp-tags'].forEach(id=>document.getElementById(id).value='');
+    closeModal();
+  }
+</script>
+</body>
+</html>

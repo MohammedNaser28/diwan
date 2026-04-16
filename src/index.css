@@ -1,0 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&display=swap');
+
+/* ── design tokens ── */
+:root {
+  --bg:       #0d1117;
+  --surface:  #111520;
+  --border:   #1e2530;
+  --gold:     #c9a84c;
+  --text:     #c8d0db;
+  --text-dim: #6b7a8d;
+  --text-muted: #3a4455;
+}
+
+/* ── reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ── base ── */
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', Arial, sans-serif;
+  direction: rtl;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── app shell ── */
+.app {
+  background: var(--bg);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
