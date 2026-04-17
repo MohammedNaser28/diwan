@@ -45,11 +45,22 @@ jobs:
       - name: Build Android APK
         run: pnpm tauri android build --target aarch64
 
-      - name: Upload APK
+      - name: Sign Android APK
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: src-tauri/gen/android/app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.ANDROID_KEYSTORE }}
+          alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: diwan-android
-          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          # We use the output from the signing step
+          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
 
   build-linux:
     runs-on: ubuntu-latest
