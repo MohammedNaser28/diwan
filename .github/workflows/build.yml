@@ -2,7 +2,8 @@ name: Build Diwan
 
 on:
   push:
-    branches: [ main, master ]
+    tags:
+	- 'v*'
   workflow_dispatch:  # allows manual trigger
 
 jobs:
@@ -119,3 +120,22 @@ jobs:
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
+
+release:
+    needs: [build-android, build-linux, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            diwan-android/**/*.apk
+            diwan-linux/**/*.deb
+            diwan-linux/**/*.AppImage
+            diwan-windows/**/*.msi
+            diwan-windows/**/*.exe
