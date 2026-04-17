@@ -70,7 +70,7 @@ const AddPoemModal: FC<AddPoemModalProps> = ({ open, onClose, onSave, editPoem }
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      <div className="bg-surface border border-border/50 rounded-[14px] w-[480px] max-w-[95%] p-6 rtl animate-[slide-up_0.18s_ease]">
+      <div className="bg-surface border border-border/50 rounded-[14px] w-[480px] max-w-[95%] p-[25px] rtl animate-[slide-up_0.18s_ease]">
         <h2 id="modal-title" className="font-amiri text-xl text-gold mb-5">
           {isEdit ? 'تعديل البيت' : 'إضافة بيت جديد'}
         </h2>

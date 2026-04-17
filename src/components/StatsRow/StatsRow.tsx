@@ -5,22 +5,53 @@ interface StatsRowProps {
   poetCount: number;
   sourceCount: number;
   tagCount: number;
+  /** When a filter is active, show the filtered count alongside total */
+  filteredCount?: number;
+  activeTag?: string;
 }
 
-const StatsRow: FC<StatsRowProps> = ({ poemCount, poetCount, sourceCount, tagCount }) => {
+const StatsRow: FC<StatsRowProps> = ({
+  poemCount,
+  poetCount,
+  sourceCount,
+  tagCount,
+  filteredCount,
+  activeTag,
+}) => {
+  const stats = [
+    { num: poemCount, label: 'بيت' },
+    { num: poetCount, label: 'شاعر' },
+    { num: sourceCount, label: 'مصدر' },
+    { num: tagCount, label: 'وسم' },
+  ];
+
+  const showFilterBadge = activeTag && activeTag !== 'الكل' && filteredCount !== undefined;
+
   return (
-    <div className="flex gap-6 px-6 py-4 border-t border-border/50 bg-bg max-[560px]:gap-4 max-[560px]:px-4 max-[560px]:justify-around">
-      {[
-        { num: poemCount, label: 'بيت' },
-        { num: poetCount, label: 'شاعر' },
-        { num: sourceCount, label: 'مصدر' },
-        { num: tagCount, label: 'وسوم' },
-      ].map((stat) => (
-        <div key={stat.label} className="text-center">
-          <div className="text-lg text-gold font-sans font-medium">{stat.num}</div>
-          <div className="text-[10px] text-text-muted font-sans mt-0.5">{stat.label}</div>
+    <div className="flex items-stretch border-t border-border/50 bg-bg max-[560px]:justify-around">
+      {stats.map((stat, i) => (
+        <div
+          key={stat.label}
+          className={`flex-1 flex flex-col items-center py-5 gap-1 ${i !== stats.length - 1 ? 'border-l border-border/30' : ''}`}
+        >
+          <div className="text-[1.75rem] text-gold font-sans font-semibold leading-none tabular-nums">
+            {stat.num}
+          </div>
+          <div className="text-[11px] text-text-muted font-sans tracking-wide">
+            {stat.label}
+          </div>
         </div>
       ))}
+
+      {/* contextual filter badge — only when a non-default filter is active */}
+      {showFilterBadge && (
+        <div className="flex items-center px-5 border-l border-border/30 gap-2 shrink-0">
+          <span className="text-[11px] text-text-muted font-sans">عرض</span>
+          <span className="text-[13px] text-gold font-medium font-sans tabular-nums">{filteredCount}</span>
+          <span className="text-[11px] text-text-muted font-sans">من</span>
+          <span className="text-[13px] text-text-dim font-sans tabular-nums">{poemCount}</span>
+        </div>
+      )}
     </div>
   );
 };

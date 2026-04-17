@@ -1,34 +1,35 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
+@source "./src/**/*.{ts,tsx}";
+/* Add this line */
 
 /* ── design tokens ── */
 @theme {
-  --color-bg:         #0d1117;
-  --color-surface:    #111520;
-  --color-border:     #1e2530;
-  --color-gold:       #c9a84c;
+  --color-bg: #0d1117;
+  --color-surface: #111824;
+  --color-border: #232d3f;
+  --color-gold: #c9a84c;
   --color-gold-hover: #d4b55a;
-  --color-text:       #c8d0db;
-  --color-text-dim:   #6b7a8d;
-  --color-text-muted: #3a4455;
-  --color-verse:      #d4c5a0;
-  --color-tag-bg:     #0d1520;
-  --color-tag-border: #1a2535;
-  --color-tag-text:   #4a6280;
-  --color-sidebar:    #0a0d13;
-  --color-sync:       #2d9a4e;
-  --color-sync-bg:    rgba(45, 154, 78, 0.05);
-  --color-sync-border:rgba(45, 154, 78, 0.2);
-  --color-sync-text:  #4a7a4a;
-  --color-hover-bg:   #2a3040;
+  --color-text: #c8d0db;
+  --color-text-dim: #6b7a8d;
+  --color-text-muted: #3d4d62;
+  --color-verse: #d4c5a0;
+  --color-sidebar: #0a0e16;
+  --color-sync: #2d9a4e;
+  --color-sync-bg: rgba(45, 154, 78, 0.05);
+  --color-sync-border: rgba(45, 154, 78, 0.2);
+  --color-sync-text: #4a7a4a;
+  --color-hover-bg: #2a3040;
   --color-active-tag-bg: #1a1500;
-  --color-danger:     #f87171;
+  --color-danger: #f87171;
 
   --font-amiri: 'Amiri', serif;
 }
 
 /* ── reset ── */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -39,7 +40,9 @@ button {
 }
 
 /* ── base ── */
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   background: var(--color-bg);
 }
@@ -53,27 +56,73 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Scrollbar styling ── */
+/* ── Scrollbar ── */
 .content-scroll::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
+
 .content-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .content-scroll::-webkit-scrollbar-thumb {
   background: var(--color-border);
   border-radius: 10px;
 }
+
 .content-scroll::-webkit-scrollbar-thumb:hover {
   background: #2a3341;
 }
 
-/* hide scrollbar on filter row */
 .filter-scroll::-webkit-scrollbar {
   display: none;
 }
 
-/* ── Ticket torn-edge pseudo-elements (can't do in Tailwind) ── */
+/* ── per-tag semantic color classes ── */
+/* used by both TicketCard tags and FilterRow active pills */
+.tag-fakhr {
+  background: rgba(201, 168, 76, 0.12);
+  border-color: rgba(201, 168, 76, 0.30);
+  color: #c9a84c;
+}
+
+.tag-hikma {
+  background: rgba(29, 158, 117, 0.12);
+  border-color: rgba(29, 158, 117, 0.28);
+  color: #3abf8f;
+}
+
+.tag-ritha {
+  background: rgba(216, 90, 48, 0.12);
+  border-color: rgba(216, 90, 48, 0.28);
+  color: #d87040;
+}
+
+.tag-hanin {
+  background: rgba(127, 119, 221, 0.12);
+  border-color: rgba(127, 119, 221, 0.28);
+  color: #a09de0;
+}
+
+.tag-hejaa {
+  background: rgba(212, 83, 126, 0.12);
+  border-color: rgba(212, 83, 126, 0.28);
+  color: #d4537e;
+}
+
+.tag-ghazal {
+  background: rgba(240, 149, 175, 0.12);
+  border-color: rgba(240, 149, 175, 0.28);
+  color: #e8859e;
+}
+
+.tag-default {
+  background: rgba(90, 138, 184, 0.12);
+  border-color: rgba(90, 138, 184, 0.28);
+  color: #5a8ab8;
+}
+
+/* ── Ticket torn-edge ── */
 @layer components {
   .ticket-top-edge::after {
     content: '';
@@ -81,9 +130,8 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 14px;
+    height: 24px;
     background: var(--color-surface);
-    border-radius: 50% 50% 0 0 / 0 0 100% 100%;
     clip-path: ellipse(54% 100% at 50% 100%);
   }
 
@@ -93,35 +141,91 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    height: 14px;
+    height: 24px;
     background: var(--color-surface);
-    border-radius: 0 0 50% 50% / 100% 100% 0 0;
     clip-path: ellipse(54% 100% at 50% 0%);
   }
 }
 
 /* ── Animations ── */
 @keyframes pulse-sync {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(1.2); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(1.2);
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes toast-in {
-  from { opacity: 0; transform: translate(-50%, -40%); }
-  to   { opacity: 1; transform: translate(-50%, -50%); }
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
 }
 
 @keyframes panel-slide {
-  from { opacity: 0; transform: translateY(-10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heart-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  40% {
+    transform: scale(1.4);
+  }
+
+  70% {
+    transform: scale(0.88);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.heart-pop {
+  animation: heart-pop 0.28s ease forwards;
 }
