@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:  # allows manual trigger
+  workflow_dispatch: # allows manual trigger
 
 jobs:
   build-android:
@@ -121,7 +121,7 @@ jobs:
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
 
-release:
+  release:
     needs: [build-android, build-linux, build-windows]
     runs-on: ubuntu-latest
     permissions:
