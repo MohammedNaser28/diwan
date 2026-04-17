@@ -32,6 +32,7 @@ export function usePoemVault() {
   const [searchQuery, setSearchQuery] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [isSyncConfigured, setIsSyncConfigured] = useState(false);
 
   // ── Load from SQLite on mount, then kick off a background cloud sync ──────
   useEffect(() => {
@@ -40,18 +41,22 @@ export function usePoemVault() {
       .then((raw) => setPoems(raw.map(toPoem)))
       .catch((err) => console.error('DB load error:', err));
 
-    // 2. Sync with Supabase in the background
-    setSyncing(true);
-    setSyncError(null);
-    invoke('sync_now')
-      .then(() => invoke<RustPoem[]>('get_poems'))
-      .then((raw) => setPoems((raw as RustPoem[]).map(toPoem)))
-      .catch((err) => {
-        // Sync failure is non-fatal — local data is still available
-        console.warn('Sync error (offline?):', err);
-        setSyncError(String(err));
-      })
-      .finally(() => setSyncing(false));
+    // 2. Check if sync is configured and kick off a background cloud sync
+    invoke<boolean>('is_sync_configured').then((configured) => {
+      setIsSyncConfigured(configured);
+      if (configured) {
+        setSyncing(true);
+        setSyncError(null);
+        invoke('sync_now')
+          .then(() => invoke<RustPoem[]>('get_poems'))
+          .then((raw) => setPoems((raw as RustPoem[]).map(toPoem)))
+          .catch((err) => {
+            console.warn('Sync error (offline?):', err);
+            setSyncError(String(err));
+          })
+          .finally(() => setSyncing(false));
+      }
+    });
   }, []);
 
   // ── Derived ──────────────────────────────────────────────────────────────
@@ -124,6 +129,21 @@ export function usePoemVault() {
     invoke('sync_now').catch(console.warn);
   }, []);
 
+  const syncNow = useCallback(async () => {
+    setSyncing(true);
+    setSyncError(null);
+    try {
+      await invoke('sync_now');
+      const raw = await invoke<RustPoem[]>('get_poems');
+      setPoems(raw.map(toPoem));
+    } catch (err) {
+      console.warn('Sync error:', err);
+      setSyncError(String(err));
+    } finally {
+      setSyncing(false);
+    }
+  }, []);
+
   return {
     poems,
     filteredPoems,
@@ -135,8 +155,10 @@ export function usePoemVault() {
     addPoem,
     updatePoem,
     deletePoem,
+    syncNow,
     syncing,
     syncError,
+    isSyncConfigured,
     stats,
   };
 }

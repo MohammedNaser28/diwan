@@ -1,5 +1,6 @@
 import { type FC, type MouseEvent, useEffect, useRef, useState } from 'react';
 import type { Poem } from '../../types/poem';
+import './AddPoemModal.css';
 
 interface AddPoemModalProps {
   open: boolean;
@@ -63,27 +64,27 @@ const AddPoemModal: FC<AddPoemModalProps> = ({ open, onClose, onSave, editPoem }
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] animate-[fade-in_0.15s_ease]"
+      className="modal-overlay"
       ref={overlayRef}
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      <div className="bg-surface border border-border/50 rounded-[14px] w-[480px] max-w-[95%] p-[25px] rtl animate-[slide-up_0.18s_ease]">
-        <h2 id="modal-title" className="font-amiri text-xl text-gold mb-5">
+      <div className="modal-content">
+        <h2 id="modal-title" className="modal-title">
           {isEdit ? 'تعديل البيت' : 'إضافة بيت جديد'}
         </h2>
 
         {/* verse text */}
-        <div className="mb-3.5">
-          <label htmlFor="inp-text" className="text-xs text-text-dim mb-1.5 block">
+        <div className="modal-field">
+          <label htmlFor="inp-text" className="modal-label">
             نص البيت
           </label>
           <textarea
             id="inp-text"
             name="text"
-            className="w-full bg-bg border border-border/50 rounded-lg px-3 py-2 text-text text-[15px] rtl outline-none font-amiri leading-[1.9] resize-y min-h-[90px] transition-colors duration-200 focus:border-gold/35"
+            className="modal-textarea"
             placeholder="اكتب البيت هنا..."
             value={form.text}
             onChange={handleChange}
@@ -91,28 +92,28 @@ const AddPoemModal: FC<AddPoemModalProps> = ({ open, onClose, onSave, editPoem }
         </div>
 
         {/* poet + source in a 2-col row */}
-        <div className="grid grid-cols-2 gap-3 max-[480px]:grid-cols-1">
-          <div className="mb-3.5">
-            <label htmlFor="inp-poet" className="text-xs text-text-dim mb-1.5 block">
+        <div className="modal-row">
+          <div className="modal-field">
+            <label htmlFor="inp-poet" className="modal-label">
               الشاعر
             </label>
             <input
               id="inp-poet"
               name="poet"
-              className="w-full bg-bg border border-border/50 rounded-lg px-3 py-2 text-text text-[13px] rtl outline-none font-sans transition-colors duration-200 focus:border-gold/35"
+              className="modal-input"
               placeholder="اسم الشاعر"
               value={form.poet}
               onChange={handleChange}
             />
           </div>
-          <div className="mb-3.5">
-            <label htmlFor="inp-source" className="text-xs text-text-dim mb-1.5 block">
+          <div className="modal-field">
+            <label htmlFor="inp-source" className="modal-label">
               المصدر
             </label>
             <input
               id="inp-source"
               name="source"
-              className="w-full bg-bg border border-border/50 rounded-lg px-3 py-2 text-text text-[13px] rtl outline-none font-sans transition-colors duration-200 focus:border-gold/35"
+              className="modal-input"
               placeholder="الديوان أو الكتاب"
               value={form.source}
               onChange={handleChange}
@@ -121,14 +122,14 @@ const AddPoemModal: FC<AddPoemModalProps> = ({ open, onClose, onSave, editPoem }
         </div>
 
         {/* tags */}
-        <div className="mb-3.5">
-          <label htmlFor="inp-tags" className="text-xs text-text-dim mb-1.5 block">
+        <div className="modal-field">
+          <label htmlFor="inp-tags" className="modal-label">
             الوسوم (مفصولة بفاصلة)
           </label>
           <input
             id="inp-tags"
             name="tags"
-            className="w-full bg-bg border border-border/50 rounded-lg px-3 py-2 text-text text-[13px] rtl outline-none font-sans transition-colors duration-200 focus:border-gold/35"
+            className="modal-input"
             placeholder="حكمة، غزل، فخر"
             value={form.tags}
             onChange={handleChange}
@@ -136,15 +137,15 @@ const AddPoemModal: FC<AddPoemModalProps> = ({ open, onClose, onSave, editPoem }
         </div>
 
         {/* actions */}
-        <div className="flex gap-2.5 justify-start mt-5">
+        <div className="modal-actions">
           <button
-            className="bg-gold text-bg border-none rounded-lg px-[22px] py-2 text-[13px] cursor-pointer font-medium transition-colors duration-150 hover:bg-gold-hover"
+            className="modal-btn-primary"
             onClick={handleSave}
           >
             {isEdit ? 'حفظ التعديل' : 'حفظ البيت'}
           </button>
           <button
-            className="bg-transparent text-text-dim border border-border/50 rounded-lg px-[18px] py-2 text-[13px] cursor-pointer transition-colors duration-150 hover:text-text"
+            className="modal-btn-secondary"
             onClick={handleCancel}
           >
             إلغاء

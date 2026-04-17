@@ -3,9 +3,9 @@ use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 
-// ── Replace with your Supabase project values ─────────────────────────────────
-const SUPABASE_URL: &str = "https://jxizrpfxvawpvcfwkiyi.supabase.co";
-const SUPABASE_ANON_KEY: &str = "sb_publishable_559HDvOpayl_oZE1oG0gsw_OW4gPR3h";
+// ── Values are now read from environment variables ────────────────────────────
+// SUPABASE_URL
+// SUPABASE_ANON_KEY
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// The shape Supabase returns/accepts — tags are stored as a JSON text column.
@@ -58,30 +58,53 @@ pub struct SyncResult {
 
 // ─── Sync function ────────────────────────────────────────────────────────────
 
+/// Returns true if both SUPABASE_URL and SUPABASE_ANON_KEY are set.
+#[tauri::command]
+pub fn is_sync_configured() -> bool {
+    std::env::var("SUPABASE_URL").is_ok() && std::env::var("SUPABASE_ANON_KEY").is_ok()
+}
+
 /// Full bidirectional sync with Supabase.
 ///
 /// Strategy:
 /// 1. Pull all rows from Supabase and upsert locally (newer timestamp wins).
 /// 2. Push all local rows (including soft-deletes) to Supabase via upsert.
 pub async fn sync(db: &Mutex<Connection>) -> Result<SyncResult, String> {
+    if !is_sync_configured() {
+        return Ok(SyncResult { pulled: 0, pushed: 0 });
+    }
+
+    let supabase_url = std::env::var("SUPABASE_URL")
+        .map_err(|_| "SUPABASE_URL environment variable is not set".to_string())?;
+    let supabase_key = std::env::var("SUPABASE_ANON_KEY")
+        .map_err(|_| "SUPABASE_ANON_KEY environment variable is not set".to_string())?;
+
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
         .build()
         .map_err(|e| format!("HTTP client error: {e}"))?;
 
-    let auth = format!("Bearer {SUPABASE_ANON_KEY}");
+    let auth = format!("Bearer {supabase_key}");
 
     // ── 1. Pull from Supabase ────────────────────────────────────────────────
-    let remote: Vec<RemotePoem> = client
-        .get(format!("{SUPABASE_URL}/rest/v1/poems?select=*"))
-        .header("apikey", SUPABASE_ANON_KEY)
+    let response = client
+        .get(format!("{supabase_url}/rest/v1/poems?select=*"))
+        .header("apikey", &supabase_key)
         .header("Authorization", &auth)
         .send()
         .await
-        .map_err(|e| format!("Supabase fetch error: {e}"))?
+        .map_err(|e| format!("Supabase fetch error: {e}"))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let err_body = response.text().await.unwrap_or_default();
+        return Err(format!("Supabase error ({}): {}", status, err_body));
+    }
+
+    let remote: Vec<RemotePoem> = response
         .json()
         .await
-        .map_err(|e| format!("Supabase parse error: {e}"))?;
+        .map_err(|e| format!("Supabase parse error: {e} (Check if 'poems' table exists)"))?;
 
     let pulled = remote.len();
 
@@ -107,9 +130,9 @@ pub async fn sync(db: &Mutex<Connection>) -> Result<SyncResult, String> {
     let pushed = local_remote.len();
 
     // Upsert all — Supabase merges on primary key conflict
-    client
-        .post(format!("{SUPABASE_URL}/rest/v1/poems"))
-        .header("apikey", SUPABASE_ANON_KEY)
+    let push_res = client
+        .post(format!("{supabase_url}/rest/v1/poems"))
+        .header("apikey", &supabase_key)
         .header("Authorization", &auth)
         .header("Content-Type", "application/json")
         .header("Prefer", "resolution=merge-duplicates")
@@ -117,6 +140,12 @@ pub async fn sync(db: &Mutex<Connection>) -> Result<SyncResult, String> {
         .send()
         .await
         .map_err(|e| format!("Supabase push error: {e}"))?;
+
+    if !push_res.status().is_success() {
+        let status = push_res.status();
+        let err_body = push_res.text().await.unwrap_or_default();
+        return Err(format!("Supabase push failed ({}): {}", status, err_body));
+    }
 
     Ok(SyncResult { pulled, pushed })
 }

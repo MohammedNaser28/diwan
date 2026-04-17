@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import './StatsRow.css';
 
 interface StatsRowProps {
   poemCount: number;
@@ -28,16 +29,16 @@ const StatsRow: FC<StatsRowProps> = ({
   const showFilterBadge = activeTag && activeTag !== 'الكل' && filteredCount !== undefined;
 
   return (
-    <div className="flex items-stretch border-t border-border/50 bg-bg max-[560px]:justify-around">
+    <div className="stats-row">
       {stats.map((stat, i) => (
         <div
           key={stat.label}
-          className={`flex-1 flex flex-col items-center py-5 gap-1 ${i !== stats.length - 1 ? 'border-l border-border/30' : ''}`}
+          className={`stat-item ${i !== stats.length - 1 ? 'bordered' : ''}`}
         >
-          <div className="text-[1.75rem] text-gold font-sans font-semibold leading-none tabular-nums">
+          <div className="stat-num">
             {stat.num}
           </div>
-          <div className="text-[11px] text-text-muted font-sans tracking-wide">
+          <div className="stat-label">
             {stat.label}
           </div>
         </div>
@@ -45,11 +46,11 @@ const StatsRow: FC<StatsRowProps> = ({
 
       {/* contextual filter badge — only when a non-default filter is active */}
       {showFilterBadge && (
-        <div className="flex items-center px-5 border-l border-border/30 gap-2 shrink-0">
-          <span className="text-[11px] text-text-muted font-sans">عرض</span>
-          <span className="text-[13px] text-gold font-medium font-sans tabular-nums">{filteredCount}</span>
-          <span className="text-[11px] text-text-muted font-sans">من</span>
-          <span className="text-[13px] text-text-dim font-sans tabular-nums">{poemCount}</span>
+        <div className="stat-filter-badge">
+          <span className="stat-filter-text">عرض</span>
+          <span className="stat-filter-num-gold">{filteredCount}</span>
+          <span className="stat-filter-text">من</span>
+          <span className="stat-filter-num-dim">{poemCount}</span>
         </div>
       )}
     </div>

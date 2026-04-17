@@ -1,10 +1,13 @@
 import { type FC, type MouseEvent, useEffect, useRef, useState } from 'react';
 import type { Poem } from '../../types/poem';
+import './TicketCard.css';
 
 interface TicketCardProps {
   poem: Poem;
   onEdit: (poem: Poem) => void;
   onDelete: (id: string) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: string, isCurrentlyFavorite: boolean) => void;
 }
 
 /** Map known Arabic tag names → CSS class suffix. Falls back to 'default'. */
@@ -20,10 +23,15 @@ function tagClass(tag: string): string {
   return `tag-${map[tag] ?? 'default'}`;
 }
 
-const TicketCard: FC<TicketCardProps> = ({ poem, onEdit, onDelete }) => {
+const TicketCard: FC<TicketCardProps> = ({ 
+  poem, 
+  onEdit, 
+  onDelete,
+  isFavorite = false,
+  onToggleFavorite
+}) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [faved, setFaved] = useState(false);
   const [heartAnim, setHeartAnim] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -65,20 +73,20 @@ const TicketCard: FC<TicketCardProps> = ({ poem, onEdit, onDelete }) => {
 
   function handleFav(e: MouseEvent) {
     e.stopPropagation();
-    setFaved((v) => !v);
+    onToggleFavorite?.(poem.id, isFavorite);
     setHeartAnim(true);
     setTimeout(() => setHeartAnim(false), 300);
   }
 
   return (
     <article
-      className="group bg-surface rounded-2xl overflow-hidden border border-border flex flex-col cursor-pointer transition-all duration-200 relative hover:border-gold/30 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+      className="ticket-card group"
       onDoubleClick={handleDoubleClick}
     >
       {/* clipboard toast */}
       {copied && (
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/90 backdrop-blur-sm px-5 py-2.5 rounded-full text-white text-sm z-20 pointer-events-none border border-gold/40 animate-[toast-in_0.3s_ease]"
+          className="toast"
           aria-live="polite"
         >
           ✓ تم النسخ
@@ -87,15 +95,15 @@ const TicketCard: FC<TicketCardProps> = ({ poem, onEdit, onDelete }) => {
 
       {/* favourite button — top left */}
       <button
-        className="absolute top-3.5 left-3.5 z-10 w-7 h-7 flex items-center justify-center bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        className="fav-btn"
         onClick={handleFav}
-        aria-label={faved ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}
+        aria-label={isFavorite ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}
       >
         <svg
           viewBox="0 0 24 24"
           width="16" height="16"
-          fill={faved ? '#c9a84c' : 'none'}
-          stroke={faved ? '#c9a84c' : '#3d4d62'}
+          fill={isFavorite ? '#c9a84c' : 'none'}
+          stroke={isFavorite ? '#c9a84c' : '#3d4d62'}
           strokeWidth="1.8"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -106,10 +114,9 @@ const TicketCard: FC<TicketCardProps> = ({ poem, onEdit, onDelete }) => {
       </button>
 
       {/* 3-dots menu — top right */}
-      <div ref={menuRef} className="absolute top-4 right-4 z-10">
+      <div ref={menuRef} className="menu-container">
         <button
-          className={`w-8 h-8 flex items-center justify-center bg-transparent border-none text-text-dim cursor-pointer rounded-lg transition-all duration-200
-            ${menuOpen ? 'opacity-100 bg-white/5 text-text' : 'opacity-0 group-hover:opacity-100 hover:bg-white/5 hover:text-text'}`}
+          className={`menu-btn ${menuOpen ? 'open' : ''}`}
           onClick={handleMenuToggle}
           aria-label="خيارات البيت"
         >
@@ -122,11 +129,11 @@ const TicketCard: FC<TicketCardProps> = ({ poem, onEdit, onDelete }) => {
 
         {menuOpen && (
           <div
-            className="absolute top-[calc(100%+6px)] right-0 bg-[#161c27] border border-border rounded-xl p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.5)] min-w-[130px]"
+            className="menu-dropdown"
             role="menu"
           >
             <button
-              className="w-full flex items-center gap-3 px-3.5 py-2.5 bg-transparent border-none text-text text-[13px] cursor-pointer rounded-lg font-sans text-right transition-colors duration-150 hover:bg-white/5 hover:text-gold"
+              className="menu-item"
               onClick={handleEdit}
               role="menuitem"
             >
@@ -137,7 +144,7 @@ const TicketCard: FC<TicketCardProps> = ({ poem, onEdit, onDelete }) => {
               تعديل
             </button>
             <button
-              className="w-full flex items-center gap-3 px-3.5 py-2.5 bg-transparent border-none text-text text-[13px] cursor-pointer rounded-lg font-sans text-right transition-colors duration-150 hover:bg-white/5 hover:text-danger"
+              className="menu-item danger"
               onClick={handleDelete}
               role="menuitem"
             >
@@ -154,25 +161,25 @@ const TicketCard: FC<TicketCardProps> = ({ poem, onEdit, onDelete }) => {
       </div>
 
       {/* ticket punch top */}
-      <div className="ticket-top-edge bg-bg h-6 relative shrink-0">
-        <div className="w-6 h-6 rounded-full bg-bg border border-border absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[2]" aria-hidden="true" />
+      <div className="ticket-top-edge ticket-punch-top">
+        <div className="punch-hole-top" aria-hidden="true" />
       </div>
-      <div className="border-t border-dashed border-border/60 mx-6" />
+      <div className="ticket-divider" />
 
       {/* verse body */}
-      <div className="px-7 pt-6 pb-5 flex-1 flex flex-col">
-        <p className="font-amiri text-[1.15rem] text-verse leading-[2.4] text-right">
+      <div className="verse-body">
+        <p className="verse-text">
           {poem.text.split('\n').map((line, i) => (
-            <span key={i} className="block">{line}</span>
+            <span key={i} className="verse-line">{line}</span>
           ))}
         </p>
 
         {poem.tags.length > 0 && (
-          <div className="flex gap-2 flex-wrap mt-5">
+          <div className="tag-list">
             {poem.tags.map((tag) => (
               <span
                 key={tag}
-                className={`inline-flex items-center border rounded-full px-3.5 py-1 text-[12px] font-sans leading-none ${tagClass(tag)}`}
+                className={`tag-badge ${tagClass(tag)}`}
               >
                 {tag}
               </span>
@@ -182,16 +189,16 @@ const TicketCard: FC<TicketCardProps> = ({ poem, onEdit, onDelete }) => {
       </div>
 
       {/* footer */}
-      <div className="border-t border-dashed border-border/60 mx-6" />
-      <footer className="flex items-center justify-between px-7 py-4 gap-4">
-        <span className="text-[14px] text-gold font-medium font-sans leading-none truncate">{poem.poet || '—'}</span>
+      <div className="ticket-divider" />
+      <footer className="ticket-footer">
+        <span className="poet-name">{poem.poet || '—'}</span>
         {poem.source && (
-          <span className="text-[12px] text-text-muted ltr font-sans leading-none shrink-0 truncate max-w-[45%]">{poem.source}</span>
+          <span className="source-name">{poem.source}</span>
         )}
       </footer>
 
       {/* ticket punch bottom */}
-      <div className="ticket-bottom-edge bg-bg h-6 relative shrink-0" aria-hidden="true" />
+      <div className="ticket-bottom-edge ticket-punch-bottom" aria-hidden="true" />
     </article>
   );
 };

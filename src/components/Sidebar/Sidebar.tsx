@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import './Sidebar.css';
 
 interface SidebarProps {
   syncing: boolean;
@@ -63,42 +64,38 @@ const Sidebar: FC<SidebarProps> = ({
   onSectionChange,
 }) => {
   return (
-    <aside className="w-[240px] bg-sidebar border-l border-border/50 flex flex-col py-6 shrink-0 h-screen sticky top-0 z-10 max-[560px]:hidden">
+    <aside className="sidebar">
       {/* Logo */}
-      <div className="px-6 pb-6 border-b border-border/50 mb-1">
-        <div className="text-[2.1rem] font-bold text-gold tracking-wider font-amiri leading-none">
+      <div className="logo-container">
+        <div className="logo-main">
           ديوان
         </div>
-        <div className="text-[10px] text-text-muted mt-1.5 font-sans ltr tracking-widest uppercase">
+        <div className="logo-sub">
           diwan · poetry vault
         </div>
       </div>
 
       {/* Section label */}
-      <p className="px-6 pt-4 pb-1 text-[10px] text-text-muted font-sans uppercase tracking-widest">
+      <p className="nav-label">
         التنقل
       </p>
 
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col gap-0.5 px-3">
+      <nav className="nav-list">
         {NAV_ITEMS.map((item) => {
           const isActive = activeSection === item.label;
           return (
             <button
               key={item.label}
               onClick={() => onSectionChange?.(item.label)}
-              className={`flex items-center gap-3 px-3.5 py-2.5 text-[13.5px] cursor-pointer transition-all duration-200 font-sans rounded-xl border-none w-full text-right
-                ${isActive
-                  ? 'text-gold bg-gold/[0.07] font-medium'
-                  : 'text-text-dim bg-transparent hover:text-text hover:bg-white/[0.03]'
-                }`}
+              className={`nav-item ${isActive ? 'active' : ''}`}
             >
-              <span className={`shrink-0 transition-colors duration-200 ${isActive ? 'text-gold' : 'text-text-muted'}`}>
+              <span className="nav-icon">
                 {item.icon}
               </span>
               <span>{item.label}</span>
               {isActive && (
-                <span className="mr-auto w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+                <span className="nav-indicator" />
               )}
             </button>
           );
@@ -106,12 +103,10 @@ const Sidebar: FC<SidebarProps> = ({
       </nav>
 
       {/* Sync badge */}
-      <div className="mx-4 mb-1 bg-sync-bg border border-sync-border rounded-xl p-3.5">
-        <div className="flex items-center gap-2.5 text-[12px] font-sans">
-          <div
-            className={`w-2 h-2 rounded-full shrink-0 ${syncing ? 'bg-gold animate-[pulse-sync_2s_infinite]' : 'bg-sync'}`}
-          />
-          <span className="text-sync-text font-medium">
+      <div className="sync-container">
+        <div className="sync-content">
+          <div className={`sync-dot ${syncing ? 'syncing' : ''}`} />
+          <span className="sync-text">
             {syncing ? 'جارٍ المزامنة...' : `متزامن · ${lastSynced || 'الآن'}`}
           </span>
         </div>

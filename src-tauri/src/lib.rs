@@ -1,5 +1,6 @@
 mod db;
 mod sync;
+mod favorites;
 
 use db::{soft_delete, upsert_poem, DbState, Poem};
 use rusqlite::Connection;
@@ -143,6 +144,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_os::init())
         .setup(|app| {
+            // Load environment variables from .env if present
+            dotenvy::dotenv().ok();
             // ── Resolve the DB path ───────────────────────────────────────────
 
             // On mobile: always use the sandboxed app-data dir (no user choice)
@@ -196,8 +199,11 @@ pub fn run() {
             save_poem,
             delete_poem,
             sync_now,
+            sync::is_sync_configured,
             get_db_path,
             pick_db_location,
+            favorites::get_favorites,
+            favorites::toggle_favorite,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -6,10 +6,16 @@ import TicketGrid from './components/TicketGrid/TicketGrid';
 import StatsRow from './components/StatsRow/StatsRow';
 import AddPoemModal from './components/AddPoemModal/AddPoemModal';
 import { usePoemVault } from './hooks/usePoemVault';
+import { useFavorites } from './hooks/useFavorites';
+import PoetsList from './components/PoetsList/PoetsList';
+import SourcesList from './components/SourcesList/SourcesList';
+import SettingsView from './components/SettingsView/SettingsView';
 import type { Poem } from './types/poem';
+import './App.css';
 
 function App() {
   const {
+    poems,
     filteredPoems,
     allTags,
     activeTag,
@@ -23,6 +29,9 @@ function App() {
     stats,
   } = usePoemVault();
 
+  const { favorites, toggleFavorite } = useFavorites();
+
+  const [activeSection, setActiveSection] = useState('كل الأبيات');
   const [modalOpen, setModalOpen] = useState(false);
   const [editPoem, setEditPoem] = useState<Poem | null>(null);
 
@@ -51,31 +60,77 @@ function App() {
   }
 
   return (
-    <div className="flex w-full h-screen overflow-hidden bg-bg" dir="rtl">
-      <Sidebar syncing={syncing} />
+    <div className="app-container" dir="rtl">
+      <Sidebar 
+        syncing={syncing} 
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+      />
       
-      <main className="flex-1 flex flex-col overflow-hidden min-w-0 bg-bg">
+      <main className="app-main">
         <Topbar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onAddClick={openAdd}
         />
 
-        <div className="content-scroll flex-1 overflow-y-auto flex flex-col pb-5">
-          <FilterRow
-            tags={allTags}
-            activeTag={activeTag}
-            onChange={setActiveTag}
-          />
+        {/* Conditional Page Rendering */}
+        <div className="app-content content-scroll">
+          
+          {/* PAGE: All Poems */}
+          {activeSection === 'كل الأبيات' && (
+            <>
+              <FilterRow
+                tags={allTags}
+                activeTag={activeTag}
+                onChange={setActiveTag}
+              />
+              <TicketGrid
+                poems={filteredPoems}
+                onAddClick={openAdd}
+                onEdit={openEdit}
+                onDelete={deletePoem}
+                favorites={favorites}
+                onToggleFavorite={toggleFavorite}
+              />
+            </>
+          )}
 
-          <TicketGrid
-            poems={filteredPoems}
-            onAddClick={openAdd}
-            onEdit={openEdit}
-            onDelete={deletePoem}
-          />
+          {/* PAGE: Favorites */}
+          {activeSection === 'المفضلة' && (
+            <>
+              <div className="page-header">
+                <h2 className="page-title">قصائدي المفضلة</h2>
+              </div>
+              <TicketGrid
+                poems={poems.filter(p => favorites.includes(p.id))}
+                onAddClick={openAdd}
+                onEdit={openEdit}
+                onDelete={deletePoem}
+                favorites={favorites}
+                onToggleFavorite={toggleFavorite}
+              />
+            </>
+          )}
+
+          {/* PAGE: Poets */}
+          {activeSection === 'الشعراء' && (
+            <PoetsList poems={poems} />
+          )}
+
+          {/* PAGE: Sources */}
+          {activeSection === 'المصادر' && (
+            <SourcesList poems={poems} />
+          )}
+
+          {/* PAGE: Settings */}
+          {activeSection === 'الإعدادات' && (
+            <SettingsView />
+          )}
+
         </div>
 
+        {/* Global Stats Footer */}
         <StatsRow
           poemCount={stats.poemCount}
           poetCount={stats.poetCount}

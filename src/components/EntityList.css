@@ -1,0 +1,105 @@
+.entity-view {
+  padding: 2rem;
+}
+
+@media (max-width: 560px) {
+  .entity-view {
+    padding: 1rem;
+  }
+}
+
+.entity-title {
+  font-family: var(--font-amiri);
+  font-size: 1.25rem;
+  color: var(--color-gold);
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(35, 45, 63, 0.5);
+}
+
+.entity-empty {
+  text-align: center;
+  padding: 5rem 0;
+  color: var(--color-text-dim);
+  font-family: sans-serif;
+  font-size: 0.875rem;
+}
+
+.entity-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .entity-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .entity-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.entity-card {
+  background-color: var(--color-surface);
+  border: 1px solid rgba(35, 45, 63, 0.5);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.entity-card:hover {
+  border-color: rgba(201, 168, 76, 0.3);
+  transform: translateY(-2px);
+}
+
+.entity-name {
+  font-family: sans-serif;
+  font-weight: 500;
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entity-badge {
+  font-size: 0.75rem;
+  background-color: rgba(201, 168, 76, 0.1);
+  color: var(--color-gold);
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Page Headers (like Favorites) */
+.page-header {
+  padding: 0.875rem 2rem;
+  border-bottom: 1px solid rgba(35, 45, 63, 0.5);
+  position: sticky;
+  top: 0;
+  background-color: var(--color-bg);
+  z-index: 5;
+}
+
+@media (max-width: 560px) {
+  .page-header {
+    padding: 0.875rem 1rem;
+  }
+}
+
+.page-title {
+  font-size: 0.875rem;
+  color: var(--color-gold);
+  font-family: sans-serif;
+  font-weight: 500;
+}

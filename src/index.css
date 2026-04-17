@@ -1,10 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&display=swap');
-@import "tailwindcss";
-@source "./src/**/*.{ts,tsx}";
-/* Add this line */
 
 /* ── design tokens ── */
-@theme {
+:root {
   --color-bg: #0d1117;
   --color-surface: #111824;
   --color-border: #232d3f;
@@ -123,28 +120,26 @@ body {
 }
 
 /* ── Ticket torn-edge ── */
-@layer components {
-  .ticket-top-edge::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 24px;
-    background: var(--color-surface);
-    clip-path: ellipse(54% 100% at 50% 100%);
-  }
+.ticket-top-edge::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: var(--color-surface);
+  clip-path: ellipse(54% 100% at 50% 100%);
+}
 
-  .ticket-bottom-edge::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 24px;
-    background: var(--color-surface);
-    clip-path: ellipse(54% 100% at 50% 0%);
-  }
+.ticket-bottom-edge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: var(--color-surface);
+  clip-path: ellipse(54% 100% at 50% 0%);
 }
 
 /* ── Animations ── */
