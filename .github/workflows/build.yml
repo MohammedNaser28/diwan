@@ -44,7 +44,7 @@ jobs:
 
       - name: Build Android APK
         # Added --release flag so Gradle creates the release folder
-        run: pnpm tauri android build --target aarch64 --release
+        run: pnpm tauri android build --target aarch64
 
       - name: Find APK Directory
         id: find_apk
