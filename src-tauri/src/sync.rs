@@ -6,14 +6,14 @@ use std::sync::Mutex;
 
 /// The shape Supabase/Hub returns/accepts.
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct RemotePoem {
-    id: String,
-    text: String,
-    poet: String,
-    source: String,
-    tags: String,
-    updated_at: i64,
-    deleted_at: Option<i64>,
+pub(crate) struct RemotePoem {
+    pub id: String,
+    pub text: String,
+    pub poet: String,
+    pub source: String,
+    pub tags: String,
+    pub updated_at: i64,
+    pub deleted_at: Option<i64>,
 }
 
 impl From<&Poem> for RemotePoem {

@@ -4,6 +4,7 @@ use axum::{
     Router,
 };
 use crate::db::{get_all_including_deleted, upsert_poem, Poem, DbState};
+use crate::sync::RemotePoem;
 use tauri::Manager;
 use tokio::net::TcpListener;
 
@@ -30,20 +31,22 @@ pub async fn start_server(app: tauri::AppHandle, port: u16) -> Result<(), String
     Ok(())
 }
 
-async fn handle_get_poems(State(state): State<ServerState>) -> Json<Vec<Poem>> {
+async fn handle_get_poems(State(state): State<ServerState>) -> Json<Vec<RemotePoem>> {
     let db = state.app.state::<DbState>();
     let conn = db.conn.lock().unwrap();
     let poems = get_all_including_deleted(&conn).unwrap_or_default();
-    Json(poems)
+    let remote: Vec<RemotePoem> = poems.iter().map(RemotePoem::from).collect();
+    Json(remote)
 }
 
 async fn handle_upsert_poem(
     State(state): State<ServerState>,
-    Json(poems): Json<Vec<Poem>>,
+    Json(remote_poems): Json<Vec<RemotePoem>>,
 ) -> Result<(), String> {
     let db = state.app.state::<DbState>();
     let conn = db.conn.lock().unwrap();
-    for poem in poems {
+    for rp in remote_poems {
+        let poem: Poem = rp.into();
         upsert_poem(&conn, &poem).map_err(|e| e.to_string())?;
     }
     Ok(())

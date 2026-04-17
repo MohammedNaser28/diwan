@@ -115,7 +115,8 @@ export function usePoemVault() {
       }
 
       // 2. Try Supabase Sync if Master or specifically enabled
-      if (config.supabase_url && config.supabase_anon_key) {
+      if (config.supabase_url && config.supabase_anon_key && 
+          config.supabase_url.trim() !== '' && config.supabase_anon_key.trim() !== '') {
         await invoke('sync_supabase');
       }
 

@@ -76,7 +76,9 @@ const SettingsView: FC = () => {
 
       {/* ─── Supabase Section ─── */}
       <div className="settings-section">
-        <h3 className="section-label">السحابة (Supabase)</h3>
+        <h3 className="section-label">
+          السحابة (Supabase) {!isMaster && <span className="optional-badge">(اختياري)</span>}
+        </h3>
         <div className="settings-card cloud-card">
           <div className="share-config-box">
             <h4 className="card-sub-label">إعداد سريع (مشاركة)</h4>
