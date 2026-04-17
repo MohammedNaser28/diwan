@@ -78,6 +78,41 @@ const SettingsView: FC = () => {
       <div className="settings-section">
         <h3 className="section-label">السحابة (Supabase)</h3>
         <div className="settings-card cloud-card">
+          <div className="share-config-box">
+            <h4 className="card-sub-label">إعداد سريع (مشاركة)</h4>
+            <div className="share-actions">
+              <button 
+                className="secondary-btn small"
+                onClick={() => {
+                  const data = btoa(`${config.supabase_url || ''}|${config.supabase_anon_key || ''}`);
+                  navigator.clipboard.writeText(data);
+                  alert('تم نسخ كود الإعداد! أرسله لمن تريد مشاركة المزامنة معه.');
+                }}
+              >
+                نسخ كود الإعداد
+              </button>
+              <button 
+                className="secondary-btn small"
+                onClick={() => {
+                  const code = prompt('أدخل كود الإعداد هنا:');
+                  if (code) {
+                    try {
+                      const [url, key] = atob(code).split('|');
+                      if (url && key) {
+                        updateConfig({ ...config, supabase_url: url, supabase_anon_key: key });
+                        alert('تم استيراد الإعدادات بنجاح!');
+                      }
+                    } catch (e) {
+                      alert('كود غير صالح!');
+                    }
+                  }
+                }}
+              >
+                استيراد من كود
+              </button>
+            </div>
+          </div>
+
           <div className="input-field">
             <label>Supabase URL</label>
             <input 

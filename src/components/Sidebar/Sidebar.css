@@ -15,7 +15,54 @@
 
 @media (max-width: 560px) {
   .sidebar {
-    display: none;
+    position: fixed;
+    top: 0;
+    right: -240px;
+    bottom: 0;
+    height: 100vh;
+    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    border-left: 1px solid var(--color-border);
+  }
+
+  .sidebar.show {
+    right: 0;
+  }
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  animation: fade-in 0.2s ease-out;
+}
+
+.sidebar-overlay.open {
+  display: block;
+}
+
+.sidebar-close {
+  display: none;
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text-dim);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 560px) {
+  .sidebar-close {
+    display: flex;
   }
 }
 
@@ -122,13 +169,16 @@
   border: 1px solid var(--color-sync-border);
   border-radius: 0.75rem;
   padding: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.sync-content {
+.sync-header {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  font-size: 12px;
+  font-size: 11px;
   font-family: sans-serif;
 }
 
@@ -145,7 +195,43 @@
   animation: pulse-sync 2s infinite;
 }
 
-.sync-text {
+.sync-status-text {
   color: var(--color-sync-text);
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sync-action-btn {
+  width: 100%;
+  background-color: var(--color-sync);
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: sans-serif;
+}
+
+.sync-action-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.sync-action-btn:active {
+  transform: translateY(0);
+}
+
+.sync-action-btn.loading {
+  background-color: var(--color-gold);
+  cursor: wait;
+}
+
+.sync-action-btn.warning {
+  background-color: var(--color-danger);
+  color: white;
 }

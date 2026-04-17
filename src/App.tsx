@@ -7,6 +7,7 @@ import StatsRow from './components/StatsRow/StatsRow';
 import AddPoemModal from './components/AddPoemModal/AddPoemModal';
 import { usePoemVault } from './hooks/usePoemVault';
 import { useFavorites } from './hooks/useFavorites';
+import { useAppConfig } from './hooks/useAppConfig';
 import PoetsList from './components/PoetsList/PoetsList';
 import SourcesList from './components/SourcesList/SourcesList';
 import SettingsView from './components/SettingsView/SettingsView';
@@ -25,15 +26,21 @@ function App() {
     addPoem,
     updatePoem,
     deletePoem,
+    syncNow,
     syncing,
     stats,
   } = usePoemVault();
 
   const { favorites, toggleFavorite } = useFavorites();
+  const { config } = useAppConfig();
 
   const [activeSection, setActiveSection] = useState('كل الأبيات');
   const [modalOpen, setModalOpen] = useState(false);
   const [editPoem, setEditPoem] = useState<Poem | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const closeSidebar = () => setIsSidebarOpen(false);
 
   function openAdd() {
     setEditPoem(null);
@@ -62,9 +69,16 @@ function App() {
   return (
     <div className="app-container" dir="rtl">
       <Sidebar 
+        isOpen={isSidebarOpen}
+        onClose={closeSidebar}
         syncing={syncing} 
+        onSync={syncNow}
+        config={config || undefined}
         activeSection={activeSection}
-        onSectionChange={setActiveSection}
+        onSectionChange={(label) => {
+          setActiveSection(label);
+          closeSidebar();
+        }}
       />
       
       <main className="app-main">
@@ -72,6 +86,7 @@ function App() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onAddClick={openAdd}
+          onMenuClick={toggleSidebar}
         />
 
         {/* Conditional Page Rendering */}

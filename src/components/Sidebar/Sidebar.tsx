@@ -2,7 +2,11 @@ import type { FC } from 'react';
 import './Sidebar.css';
 
 interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
   syncing: boolean;
+  onSync?: () => void;
+  config?: import('../../types/config').AppConfig;
   lastSynced?: string;
   /** Currently active nav item label */
   activeSection?: string;
@@ -58,13 +62,31 @@ const NAV_ITEMS = [
 ];
 
 const Sidebar: FC<SidebarProps> = ({
+  isOpen,
+  onClose,
   syncing,
+  onSync,
+  config,
   lastSynced,
   activeSection = 'كل الأبيات',
   onSectionChange,
 }) => {
+  const isPeer = config?.supabase_role === 'Peer';
+  const noIp = isPeer && !config?.local_hub_ip;
+
   return (
-    <aside className="sidebar">
+    <>
+      {/* Overlay — mobile only */}
+      <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
+
+      <aside className={`sidebar ${isOpen ? 'show' : ''}`}>
+        {/* Close Button — mobile only */}
+        <button className="sidebar-close" onClick={onClose} aria-label="إغلاق">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       {/* Logo */}
       <div className="logo-container">
         <div className="logo-main">
@@ -104,14 +126,32 @@ const Sidebar: FC<SidebarProps> = ({
 
       {/* Sync badge */}
       <div className="sync-container">
-        <div className="sync-content">
+        <div className="sync-header">
           <div className={`sync-dot ${syncing ? 'syncing' : ''}`} />
-          <span className="sync-text">
+          <span className="sync-status-text">
             {syncing ? 'جارٍ المزامنة...' : `متزامن · ${lastSynced || 'الآن'}`}
           </span>
         </div>
+
+        {noIp ? (
+          <button 
+            className="sync-action-btn warning"
+            onClick={() => onSectionChange?.('الإعدادات')}
+          >
+            إعداد المزامنة (IP)
+          </button>
+        ) : (
+          <button 
+            className={`sync-action-btn ${syncing ? 'loading' : ''}`}
+            onClick={onSync}
+            disabled={syncing}
+          >
+            {syncing ? 'انتظر...' : 'مزامنة الآن'}
+          </button>
+        )}
       </div>
     </aside>
+    </>
   );
 };
 

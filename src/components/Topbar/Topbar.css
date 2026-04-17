@@ -19,6 +19,24 @@
   }
 }
 
+.menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--color-text-dim);
+  cursor: pointer;
+  padding: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+@media (max-width: 560px) {
+  .menu-toggle {
+    display: flex;
+  }
+}
+
 .topbar-logo {
   display: none;
   font-family: var(--font-amiri);

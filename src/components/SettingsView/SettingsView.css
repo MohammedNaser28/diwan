@@ -160,3 +160,47 @@
   height: 1.2rem;
   accent-color: var(--color-gold);
 }
+
+/* ─── Share Config ─── */
+.share-config-box {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.card-sub-label {
+  font-size: 0.9rem;
+  color: var(--color-gold);
+  margin-bottom: 1rem;
+}
+
+.share-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.secondary-btn {
+  background: rgba(201, 168, 76, 0.1);
+  color: var(--color-gold);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.secondary-btn:hover {
+  background: rgba(201, 168, 76, 0.2);
+  border-color: var(--color-gold);
+}
+
+.secondary-btn.small {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+}
