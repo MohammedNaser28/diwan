@@ -43,13 +43,22 @@ jobs:
         run: pnpm install
 
       - name: Build Android APK
-        run: pnpm tauri android build --target aarch64
+        # Added --release flag so Gradle creates the release folder
+        run: pnpm tauri android build --target aarch64 --release
+
+      - name: Find APK Directory
+        id: find_apk
+        run: |
+          APK_PATH=$(find src-tauri/gen/android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          APK_DIR=$(dirname "$APK_PATH")
+          echo "apk_dir=$APK_DIR" >> $GITHUB_OUTPUT
+          echo "Found APK in $APK_DIR"
 
       - name: Sign Android APK
         uses: r0adkll/sign-android-release@v1
         id: sign_app
         with:
-          releaseDirectory: src-tauri/gen/android/app/build/outputs/apk/release
+          releaseDirectory: ${{ steps.find_apk.outputs.apk_dir }}
           signingKeyBase64: ${{ secrets.ANDROID_KEYSTORE }}
           alias: ${{ secrets.ANDROID_KEY_ALIAS }}
           keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -59,7 +68,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: diwan-android
-          # We use the output from the signing step
           path: ${{ steps.sign_app.outputs.signedReleaseFile }}
 
   build-linux:
