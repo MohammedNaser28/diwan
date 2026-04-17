@@ -1,22 +1,67 @@
-import { useMemo, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Poem, Tag } from '../types/poem';
-import { SEED_POEMS } from '../data/seed';
 
 const ALL_TAG = 'الكل';
 
+// ─── Rust ↔ TS bridge type ───────────────────────────────────────────────────
+// Matches the Rust `Poem` struct field names (snake_case).
+interface RustPoem {
+  id: string;
+  text: string;
+  poet: string;
+  source: string;
+  tags: string[];
+  updated_at: number;
+  deleted_at: number | null;
+}
+
+function toPoem(r: RustPoem): Poem {
+  return { id: r.id, text: r.text, poet: r.poet, source: r.source, tags: r.tags };
+}
+
+function nowMs(): number {
+  return Date.now();
+}
+
+// ─── Hook ────────────────────────────────────────────────────────────────────
+
 export function usePoemVault() {
-  const [poems, setPoems] = useState<Poem[]>(SEED_POEMS);
+  const [poems, setPoems] = useState<Poem[]>([]);
   const [activeTag, setActiveTag] = useState<Tag>(ALL_TAG);
   const [searchQuery, setSearchQuery] = useState('');
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
-  /** All unique tags derived from current poems, prefixed with "الكل" */
+  // ── Load from SQLite on mount, then kick off a background cloud sync ──────
+  useEffect(() => {
+    // 1. Show local data immediately (offline-first)
+    invoke<RustPoem[]>('get_poems')
+      .then((raw) => setPoems(raw.map(toPoem)))
+      .catch((err) => console.error('DB load error:', err));
+
+    // 2. Sync with Supabase in the background
+    setSyncing(true);
+    setSyncError(null);
+    invoke('sync_now')
+      .then(() => invoke<RustPoem[]>('get_poems'))
+      .then((raw) => setPoems((raw as RustPoem[]).map(toPoem)))
+      .catch((err) => {
+        // Sync failure is non-fatal — local data is still available
+        console.warn('Sync error (offline?):', err);
+        setSyncError(String(err));
+      })
+      .finally(() => setSyncing(false));
+  }, []);
+
+  // ── Derived ──────────────────────────────────────────────────────────────
+
   const allTags = useMemo<Tag[]>(() => {
     const tagSet = new Set<Tag>();
     poems.forEach((p) => p.tags.forEach((t) => tagSet.add(t)));
     return [ALL_TAG, ...Array.from(tagSet)];
   }, [poems]);
 
-  /** Poems after applying tag filter + search query */
   const filteredPoems = useMemo<Poem[]>(() => {
     const q = searchQuery.trim().toLowerCase();
     return poems.filter((p) => {
@@ -30,19 +75,54 @@ export function usePoemVault() {
     });
   }, [poems, activeTag, searchQuery]);
 
-  function addPoem(data: Omit<Poem, 'id'>) {
-    setPoems((prev) => [...prev, { id: crypto.randomUUID(), ...data }]);
-  }
+  const stats = useMemo(() => {
+    const poets = new Set(poems.map((p) => p.poet).filter(Boolean));
+    const sources = new Set(poems.map((p) => p.source).filter(Boolean));
+    const tags = new Set(poems.flatMap((p) => p.tags));
+    return {
+      poemCount: poems.length,
+      poetCount: poets.size,
+      sourceCount: sources.size,
+      tagCount: tags.size,
+    };
+  }, [poems]);
 
-  function updatePoem(id: string, data: Omit<Poem, 'id'>) {
-    setPoems((prev) =>
-      prev.map((p) => (p.id === id ? { id, ...data } : p)),
-    );
-  }
+  // ── Mutations ─────────────────────────────────────────────────────────────
 
-  function deletePoem(id: string) {
+  const addPoem = useCallback(async (data: Omit<Poem, 'id'>) => {
+    const poem: RustPoem = {
+      id: crypto.randomUUID(),
+      ...data,
+      updated_at: nowMs(),
+      deleted_at: null,
+    };
+    // Optimistic update
+    setPoems((prev) => [toPoem(poem), ...prev]);
+    // Persist locally
+    await invoke('save_poem', { poem }).catch(console.error);
+    // Background cloud push (fire-and-forget)
+    invoke('sync_now').catch(console.warn);
+  }, []);
+
+  const updatePoem = useCallback(async (id: string, data: Omit<Poem, 'id'>) => {
+    const poem: RustPoem = {
+      id,
+      ...data,
+      updated_at: nowMs(),
+      deleted_at: null,
+    };
+    // Optimistic update
+    setPoems((prev) => prev.map((p) => (p.id === id ? toPoem(poem) : p)));
+    await invoke('save_poem', { poem }).catch(console.error);
+    invoke('sync_now').catch(console.warn);
+  }, []);
+
+  const deletePoem = useCallback(async (id: string) => {
+    // Optimistic removal
     setPoems((prev) => prev.filter((p) => p.id !== id));
-  }
+    await invoke('delete_poem', { id }).catch(console.error);
+    invoke('sync_now').catch(console.warn);
+  }, []);
 
   return {
     poems,
@@ -55,5 +135,8 @@ export function usePoemVault() {
     addPoem,
     updatePoem,
     deletePoem,
+    syncing,
+    syncError,
+    stats,
   };
 }

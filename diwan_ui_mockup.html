@@ -1,0 +1,146 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .app { background: #0d1117; min-height: 600px; border-radius: 12px; overflow: hidden; display: flex; font-family: 'Amiri', serif; direction: rtl; }
+  .sidebar { width: 220px; background: #0a0d13; border-left: 0.5px solid #1e2530; display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; }
+  .logo { padding: 0 20px 24px; border-bottom: 0.5px solid #1e2530; }
+  .logo-text { font-size: 22px; font-weight: 700; color: #c9a84c; letter-spacing: 1px; }
+  .logo-sub { font-size: 11px; color: #4a5568; margin-top: 2px; font-family: sans-serif; direction: ltr; text-align: right; }
+  .nav { padding: 16px 0; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 14px; color: #6b7a8d; cursor: pointer; transition: all 0.15s; font-family: sans-serif; direction: rtl; }
+  .nav-item.active { color: #c9a84c; background: linear-gradient(90deg, #1a1500 0%, transparent 100%); border-right: 2px solid #c9a84c; }
+  .nav-item:hover:not(.active) { color: #a0aab8; background: #111520; }
+  .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .sync-badge { margin: 0 16px 20px; background: #0f1a0f; border: 0.5px solid #1a3a1a; border-radius: 8px; padding: 10px 12px; }
+  .sync-row { display: flex; align-items: center; gap: 8px; font-size: 11px; font-family: sans-serif; }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #2d9a4e; flex-shrink: 0; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .sync-text { color: #4a7a4a; }
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { padding: 16px 24px; border-bottom: 0.5px solid #1e2530; display: flex; align-items: center; gap: 12px; }
+  .search-wrap { flex: 1; position: relative; }
+  .search-input { width: 100%; background: #111520; border: 0.5px solid #1e2530; border-radius: 8px; padding: 9px 36px 9px 14px; color: #c8d0db; font-size: 13px; font-family: sans-serif; direction: rtl; outline: none; }
+  .search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #4a5568; }
+  .add-btn { background: #c9a84c; color: #0d1117; border: none; border-radius: 8px; padding: 9px 16px; font-size: 13px; font-family: sans-serif; cursor: pointer; white-space: nowrap; font-weight: 500; }
+  .filter-row { padding: 12px 24px; display: flex; gap: 8px; border-bottom: 0.5px solid #1e2530; overflow-x: auto; }
+  .tag { background: #111520; border: 0.5px solid #1e2530; border-radius: 20px; padding: 5px 14px; font-size: 12px; color: #6b7a8d; white-space: nowrap; cursor: pointer; font-family: sans-serif; }
+  .tag.active { background: #1a1500; border-color: #c9a84c; color: #c9a84c; }
+  .quotes-grid { padding: 20px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; overflow-y: auto; flex: 1; }
+  .quote-card { background: #111520; border: 0.5px solid #1e2530; border-radius: 12px; padding: 18px; cursor: pointer; transition: border-color 0.15s; position: relative; }
+  .quote-card:hover { border-color: #2a3040; }
+  .quote-card.featured { border-color: #2a2000; background: #0f0e00; }
+  .quote-text { font-size: 15px; color: #d4c5a0; line-height: 1.8; margin-bottom: 14px; font-family: 'Amiri', serif; }
+  .quote-meta { display: flex; align-items: center; justify-content: space-between; }
+  .poet-name { font-size: 12px; color: #c9a84c; font-family: sans-serif; }
+  .source { font-size: 11px; color: #3a4455; font-family: sans-serif; direction: ltr; }
+  .tags-row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .quote-tag { background: #0d1520; border: 0.5px solid #1a2535; border-radius: 12px; padding: 3px 10px; font-size: 10px; color: #4a6280; font-family: sans-serif; }
+  .ornament { position: absolute; top: 14px; left: 14px; font-size: 28px; color: #1a1500; font-family: 'Amiri', serif; line-height: 1; user-select: none; }
+  .featured .ornament { color: #2a1e00; }
+  .stats-row { display: flex; gap: 12px; padding: 16px 24px; border-top: 0.5px solid #1e2530; }
+  .stat { text-align: center; }
+  .stat-num { font-size: 18px; color: #c9a84c; font-family: sans-serif; }
+  .stat-label { font-size: 10px; color: #3a4455; font-family: sans-serif; margin-top: 2px; }
+</style>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-text">ديوان</div>
+      <div class="logo-sub">diwan · poetry vault</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item active"><div class="nav-dot"></div>كل الأبيات</div>
+      <div class="nav-item"><div class="nav-dot"></div>الشعراء</div>
+      <div class="nav-item"><div class="nav-dot"></div>المصادر</div>
+      <div class="nav-item"><div class="nav-dot"></div>المفضلة</div>
+      <div class="nav-item"><div class="nav-dot"></div>الإعدادات</div>
+    </div>
+    <div class="sync-badge">
+      <div class="sync-row">
+        <div class="sync-dot"></div>
+        <span class="sync-text">متزامن · منذ دقيقتين</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="search-wrap">
+        <input class="search-input" placeholder="ابحث في الأبيات، الشعراء، المصادر...">
+        <svg class="search-icon" viewBox="0 0 16 16" fill="none" stroke="#4a5568" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>
+      </div>
+      <button class="add-btn">+ إضافة بيت</button>
+    </div>
+
+    <div class="filter-row">
+      <div class="tag active">الكل</div>
+      <div class="tag">حكمة</div>
+      <div class="tag">غزل</div>
+      <div class="tag">رثاء</div>
+      <div class="tag">فخر</div>
+      <div class="tag">وصف</div>
+      <div class="tag">حنين</div>
+    </div>
+
+    <div class="quotes-grid">
+      <div class="quote-card featured">
+        <div class="ornament">"</div>
+        <div class="quote-text">وما المرءُ إلا حيثُ يجعلُ نفسَهُ<br>فكُن طالبًا في العُلا أعلاها مقاما</div>
+        <div class="quote-meta">
+          <span class="poet-name">المتنبي</span>
+          <span class="source">ديوان المتنبي</span>
+        </div>
+        <div class="tags-row">
+          <div class="quote-tag">حكمة</div>
+          <div class="quote-tag">فخر</div>
+        </div>
+      </div>
+
+      <div class="quote-card">
+        <div class="ornament">"</div>
+        <div class="quote-text">أنا البحرُ في أحشائه الدُّرُّ كامنٌ<br>فهل سألوا الغوّاصَ عن صدفاتي</div>
+        <div class="quote-meta">
+          <span class="poet-name">أبو العلاء المعري</span>
+          <span class="source">اللزوميات</span>
+        </div>
+        <div class="tags-row">
+          <div class="quote-tag">فخر</div>
+        </div>
+      </div>
+
+      <div class="quote-card">
+        <div class="ornament">"</div>
+        <div class="quote-text">إذا غامرتَ في شرفٍ مرومٍ<br>فلا تقنع بما دون النجوم</div>
+        <div class="quote-meta">
+          <span class="poet-name">المتنبي</span>
+          <span class="source">ديوان المتنبي</span>
+        </div>
+        <div class="tags-row">
+          <div class="quote-tag">حكمة</div>
+          <div class="quote-tag">حنين</div>
+        </div>
+      </div>
+
+      <div class="quote-card">
+        <div class="ornament">"</div>
+        <div class="quote-text">على قَدْرِ أهلِ العزمِ تأتي العزائمُ<br>وتأتي على قَدْرِ الكِرامِ المكارمُ</div>
+        <div class="quote-meta">
+          <span class="poet-name">المتنبي</span>
+          <span class="source">ديوان المتنبي</span>
+        </div>
+        <div class="tags-row">
+          <div class="quote-tag">حكمة</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-num">١٢٤</div><div class="stat-label">بيت</div></div>
+      <div class="stat"><div class="stat-num">١٨</div><div class="stat-label">شاعر</div></div>
+      <div class="stat"><div class="stat-num">٣١</div><div class="stat-label">مصدر</div></div>
+      <div class="stat"><div class="stat-num">٧</div><div class="stat-label">وسوم</div></div>
+    </div>
+  </div>
+</div>

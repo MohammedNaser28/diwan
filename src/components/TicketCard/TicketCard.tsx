@@ -1,6 +1,5 @@
 import { type FC, type MouseEvent, useEffect, useRef, useState } from 'react';
 import type { Poem } from '../../types/poem';
-import styles from './TicketCard.module.css';
 
 interface TicketCardProps {
   poem: Poem;
@@ -52,33 +51,43 @@ const TicketCard: FC<TicketCardProps> = ({ poem, onEdit, onDelete }) => {
   }
 
   return (
-    <article className={styles.ticket} onDoubleClick={handleDoubleClick}>
+    <article
+      className="group bg-surface rounded-xl overflow-hidden border border-border/50 flex flex-col cursor-pointer transition-all duration-150 relative hover:border-hover-bg hover:-translate-y-0.5"
+      onDoubleClick={handleDoubleClick}
+    >
       {/* ── clipboard toast ── */}
       {copied && (
-        <div className={styles.toast} aria-live="polite">
-          <span className={styles.toastLabel}>✓ تم النسخ</span>
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/85 backdrop-blur-sm px-4 py-2 rounded-full text-white text-xs z-20 pointer-events-none border border-gold/50 animate-[toast-in_0.3s_ease]"
+          aria-live="polite"
+        >
+          <span>✓ تم النسخ</span>
         </div>
       )}
 
       {/* ── 3-dots menu ── */}
       <div ref={menuRef}>
         <button
-          className={`${styles.menuBtn}${menuOpen ? ` ${styles.open}` : ''}`}
+          className={`absolute top-[18px] right-3 bg-transparent border-none text-[#4a5568] cursor-pointer p-1 rounded z-5 transition-opacity duration-200
+            ${menuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
           onClick={handleMenuToggle}
           aria-label="خيارات البيت"
           title="خيارات"
         >
-          {/* vertical ellipsis */}
           <svg width="14" height="14" viewBox="0 0 4 16" fill="currentColor">
-            <circle cx="2" cy="2"  r="1.5" />
-            <circle cx="2" cy="8"  r="1.5" />
+            <circle cx="2" cy="2" r="1.5" />
+            <circle cx="2" cy="8" r="1.5" />
             <circle cx="2" cy="14" r="1.5" />
           </svg>
         </button>
 
         {menuOpen && (
-          <div className={styles.dropdown} role="menu">
-            <button className={styles.dropItem} onClick={handleEdit} role="menuitem">
+          <div className="absolute top-[45px] right-3 bg-[#1c212b] border border-border/50 rounded-lg p-1 z-10 shadow-[0_4px_12px_rgba(0,0,0,0.3)] min-w-[100px]" role="menu">
+            <button
+              className="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none text-text text-xs cursor-pointer rounded font-sans text-right hover:bg-white/5 hover:text-gold"
+              onClick={handleEdit}
+              role="menuitem"
+            >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -87,7 +96,7 @@ const TicketCard: FC<TicketCardProps> = ({ poem, onEdit, onDelete }) => {
               تعديل
             </button>
             <button
-              className={`${styles.dropItem} ${styles.danger}`}
+              className="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none text-text text-xs cursor-pointer rounded font-sans text-right hover:bg-white/5 hover:text-danger"
               onClick={handleDelete}
               role="menuitem"
             >
@@ -104,36 +113,42 @@ const TicketCard: FC<TicketCardProps> = ({ poem, onEdit, onDelete }) => {
         )}
       </div>
 
-      {/* ── torn top ── */}
-      <div className={styles.ticketTop}>
-        <div className={styles.ticketHole} aria-hidden="true" />
+      {/* ── DESIGN: TORN TOP ── */}
+      <div className="ticket-top-edge bg-bg h-3.5 relative">
+        <div className="w-3.5 h-3.5 rounded-full bg-bg border border-border/50 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[2]" aria-hidden="true" />
       </div>
 
-      <hr className={styles.divider} />
+      <hr className="border-none border-t-[1.5px] border-dashed border-border mx-4" />
 
       {/* ── body ── */}
-      <div className={styles.ticketBody}>
-        <p className={styles.quoteText}>{poem.text}</p>
+      <div className="px-4 pt-4 pb-3 flex-1 flex flex-col gap-2.5">
+        <p className="font-amiri text-sm text-verse leading-[1.9] text-right z-[1]">
+          {poem.text.split('\n').map((line, i) => (
+            <span key={i}>{line}<br/></span>
+          ))}
+        </p>
 
         {poem.tags.length > 0 && (
-          <div className={styles.ticketTags}>
+          <div className="flex gap-[5px] flex-wrap mt-2.5">
             {poem.tags.map((tag) => (
-              <span key={tag} className={styles.tTag}>{tag}</span>
+              <span key={tag} className="bg-tag-bg border border-tag-border rounded-[10px] px-2 py-0.5 text-[10px] text-tag-text font-sans">
+                {tag}
+              </span>
             ))}
           </div>
         )}
       </div>
 
-      <hr className={styles.divider} />
+      <hr className="border-none border-t-[1.5px] border-dashed border-border mx-4" />
 
-      {/* ── footer ── */}
-      <footer className={styles.ticketFooter}>
-        <span className={styles.poet}>{poem.poet || '—'}</span>
-        {poem.source && <span className={styles.source}>{poem.source}</span>}
+      {/* ── DESIGN: FOOTER ── */}
+      <footer className="flex items-center justify-between px-4 pb-3.5">
+        <span className="text-[11px] text-gold font-medium font-sans">{poem.poet || '—'}</span>
+        {poem.source && <span className="text-[10px] text-text-muted ltr font-sans">{poem.source}</span>}
       </footer>
 
-      {/* ── torn bottom ── */}
-      <div className={styles.ticketBottom} aria-hidden="true" />
+      {/* ── DESIGN: TORN BOTTOM ── */}
+      <div className="ticket-bottom-edge bg-bg h-3.5 relative" aria-hidden="true" />
     </article>
   );
 };
