@@ -1,15 +1,21 @@
 mod db;
 mod sync;
 mod favorites;
+mod settings;
+mod sync_server;
 
 use db::{soft_delete, upsert_poem, DbState, Poem};
 use rusqlite::Connection;
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
 
+// ... keep existing helpers ...
+// (I will use multi_replace for better precision if needed, but let's try a full replace for the imports and commands)
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /// Read the saved DB path from `app_config_dir/diwan_db_path.txt`.
+#[cfg(desktop)]
 fn read_saved_path(app: &AppHandle) -> Option<String> {
     let config_dir = app.path().app_config_dir().ok()?;
     let txt = config_dir.join("diwan_db_path.txt");
@@ -17,6 +23,7 @@ fn read_saved_path(app: &AppHandle) -> Option<String> {
 }
 
 /// Persist the current DB path so it survives restarts.
+#[cfg(desktop)]
 fn write_saved_path(app: &AppHandle, path: &str) -> std::io::Result<()> {
     let config_dir = app
         .path()
@@ -27,6 +34,7 @@ fn write_saved_path(app: &AppHandle, path: &str) -> std::io::Result<()> {
 }
 
 /// Open a fresh WAL-mode connection at `path` and run schema init.
+#[cfg(desktop)]
 fn open_connection(path: &str) -> Result<Connection, String> {
     let conn = Connection::open(path).map_err(|e| e.to_string())?;
     db::init_db(&conn).map_err(|e| e.to_string())?;
@@ -56,11 +64,6 @@ fn delete_poem(state: State<DbState>, id: String) -> Result<(), String> {
     soft_delete(&conn, &id).map_err(|e| e.to_string())
 }
 
-/// Bidirectional cloud sync with Supabase.
-#[tauri::command]
-async fn sync_now(state: State<'_, DbState>) -> Result<sync::SyncResult, String> {
-    sync::sync(&state.conn).await
-}
 
 /// Returns the current absolute path to `diwan.db`.
 #[tauri::command]
@@ -72,10 +75,8 @@ fn get_db_path(state: State<DbState>) -> Result<String, String> {
 /// (Desktop only) Opens a native folder-picker dialog.
 /// The user selects a directory; the database is copied there and the
 /// connection is switched live — no restart required.
-///
-/// On mobile this always returns an error (mobile uses the default path).
 #[tauri::command]
-fn pick_db_location(app: AppHandle, state: State<DbState>) -> Result<String, String> {
+async fn pick_db_location(_app: AppHandle, _state: State<'_, DbState>) -> Result<String, String> {
     // ── Mobile guard ──────────────────────────────────────────────────────────
     #[cfg(mobile)]
     return Err("Custom DB location is not supported on mobile.".to_string());
@@ -85,8 +86,8 @@ fn pick_db_location(app: AppHandle, state: State<DbState>) -> Result<String, Str
     {
         use tauri_plugin_dialog::DialogExt;
 
-        // Show the native OS folder picker (blocking)
-        let selection = app
+        // Show the native OS folder picker (blocking on this thread, but async for the UI)
+        let selection = _app
             .dialog()
             .file()
             .blocking_pick_folder()
@@ -99,36 +100,36 @@ fn pick_db_location(app: AppHandle, state: State<DbState>) -> Result<String, Str
         std::fs::create_dir_all(&new_dir)
             .map_err(|e| format!("Cannot create directory: {e}"))?;
 
-        // ── Copy existing DB to new location ──────────────────────────────────
-        {
-            let old_conn = state.conn.lock().map_err(|e| e.to_string())?;
-
+        // ── Checkpoint & get old path ─────────────────────────────────────────
+        let old_path: String = {
+            let old_conn = _state.conn.lock().map_err(|e| e.to_string())?;
             // Checkpoint WAL so everything is in the main file
             old_conn
                 .execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
                 .ok();
+            _state.path.lock().map_err(|e| e.to_string())?.clone()
+        }; // Lock dropped here
 
-            let old_path: String = state.path.lock().map_err(|e| e.to_string())?.clone();
-            let old_db = std::path::Path::new(&old_path);
-
-            if old_db.exists() {
-                std::fs::copy(old_db, &new_db_path)
-                    .map_err(|e| format!("Cannot copy database: {e}"))?;
-            }
-        } // locks released
+        // ── Copy existing DB to new location ──────────────────────────────────
+        let old_db = std::path::Path::new(&old_path);
+        if old_db.exists() {
+            // No DB locks held during copy!
+            std::fs::copy(old_db, &new_db_path)
+                .map_err(|e| format!("Cannot copy database: {e}"))?;
+        }
 
         // ── Open fresh connection at new path ─────────────────────────────────
         let new_conn = open_connection(&new_db_str)?;
 
         {
-            let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
-            let mut path_guard = state.path.lock().map_err(|e| e.to_string())?;
+            let mut conn_guard = _state.conn.lock().map_err(|e| e.to_string())?;
+            let mut path_guard = _state.path.lock().map_err(|e| e.to_string())?;
             *conn_guard = new_conn;
             *path_guard = new_db_str.clone();
         }
 
         // Persist so the next launch opens from the same place
-        write_saved_path(&app, &new_db_str)
+        write_saved_path(&_app, &new_db_str)
             .map_err(|e| format!("Could not save path preference: {e}"))?;
 
         Ok(new_db_str)
@@ -182,6 +183,16 @@ pub fn run() {
                 }
             };
 
+            // ── Seed Database if it doesn't exist ─────────────────────────────
+            let db_file_path = std::path::Path::new(&db_path);
+            if !db_file_path.exists() {
+                if let Ok(seed_path) = app.path().resolve("resources/seed.db", tauri::path::BaseDirectory::Resource) {
+                    if seed_path.exists() {
+                        let _ = std::fs::copy(seed_path, &db_path);
+                    }
+                }
+            }
+
             // ── Open & initialise the database ────────────────────────────────
             let conn = Connection::open(&db_path).expect("Failed to open SQLite database");
             db::init_db(&conn).expect("Failed to initialise schema");
@@ -192,14 +203,27 @@ pub fn run() {
                 path: Mutex::new(db_path),
             });
 
+            // ── Start Local Sync Server if enabled ────────────────────────────
+            let config = settings::load_config(app.handle());
+            if config.local_sync_enabled {
+                let handle = app.handle().clone();
+                tokio::spawn(async move {
+                    let _ = sync_server::start_server(handle, 1421).await;
+                });
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             get_poems,
             save_poem,
             delete_poem,
-            sync_now,
+            sync::sync_supabase,
+            sync::sync_local_hub,
             sync::is_sync_configured,
+            settings::get_config,
+            settings::set_config,
+            sync_server::get_local_ip,
             get_db_path,
             pick_db_location,
             favorites::get_favorites,

@@ -2,94 +2,156 @@ import type { FC } from 'react';
 import { useDbPath } from '../../hooks/useDbPath';
 import { usePlatform } from '../../hooks/usePlatform';
 import { usePoemVault } from '../../hooks/usePoemVault';
+import { useAppConfig } from '../../hooks/useAppConfig';
+import { invoke } from '@tauri-apps/api/core';
+import { useEffect, useState } from 'react';
 import './SettingsView.css';
 
 const SettingsView: FC = () => {
   const { isDesktop, ready } = usePlatform();
   const { dbPath, changing, changeLocation, error: dbError } = useDbPath();
-  const { syncNow, syncing, syncError, isSyncConfigured } = usePoemVault();
+  const { syncNow, syncing, syncError } = usePoemVault();
+  const { config, updateConfig } = useAppConfig();
+  const [localIp, setLocalIp] = useState<string | null>(null);
 
-  if (!ready) return null;
+  useEffect(() => {
+    if (config?.local_sync_enabled) {
+      invoke<string>('get_local_ip').then(setLocalIp).catch(console.warn);
+    }
+  }, [config?.local_sync_enabled]);
+
+  if (!ready || !config) return null;
+
+  const isMaster = config.supabase_role === 'Master';
 
   return (
     <div className="settings-view">
       <h2 className="settings-title">الإعدادات</h2>
       
+      {/* ─── Database Section ─── */}
       <div className="settings-section">
         <h3 className="section-label">قاعدة البيانات</h3>
-        
         {isDesktop ? (
-          <div className="db-location-card">
-            <div className="db-info">
-              <p className="db-path-label">موقع الملف الحالي:</p>
-              <div className="db-path-box">
-                <code className="db-path-text">{dbPath || '—'}</code>
-              </div>
+          <div className="settings-card db-card">
+            <div className="field-group">
+              <span className="field-label">موقع الملف:</span>
+              <code className="path-display">{dbPath || '—'}</code>
             </div>
-
-            {dbError && <p className="db-error">{dbError}</p>}
-
-            <div className="db-actions">
-              <button
-                className="db-change-btn"
-                onClick={changeLocation}
-                disabled={changing}
-              >
-                {changing ? 'جارٍ التغيير...' : 'تغيير موقع الحفظ'}
-              </button>
-              <p className="db-hint">
-                سيتم نقل ملف البيانات `diwan.db` إلى المجلد الجديد الذي تختاره تلقائيًا.
-              </p>
-            </div>
+            {dbError && <p className="error-text">{dbError}</p>}
+            <button className="primary-btn" onClick={changeLocation} disabled={changing}>
+              {changing ? 'جارٍ النقل...' : 'تغيير موقع الحفظ'}
+            </button>
           </div>
         ) : (
-          <div className="mobile-notice">
-            <p>يتم إدارة قاعدة البيانات تلقائيًا على هذا الجهاز.</p>
-          </div>
+          <p className="hint-text">يتم إدارة الملف تلقائيًا على هذا الجهاز.</p>
         )}
       </div>
 
+      {/* ─── Sync Identity Section ─── */}
       <div className="settings-section">
-        <h3 className="section-label">النسخ الاحتياطي (Supabase)</h3>
-        <div className="cloud-backup-card">
-          {isSyncConfigured ? (
-            <>
-              <p className="cloud-desc">
-                قم بمزامنة بياناتك مع Supabase للحفاظ عليها والوصول إليها من أجهزة أخرى.
-              </p>
-              
-              {syncError && <p className="cloud-error">{syncError}</p>}
-              
-              <button
-                className="cloud-sync-btn"
-                onClick={syncNow}
-                disabled={syncing}
-              >
-                {syncing ? 'جارٍ المزامنة...' : 'مزامنة مع Supabase الآن'}
-              </button>
-            </>
-          ) : (
-            <div className="cloud-setup-notice">
-              <p className="cloud-desc">النسخ الاحتياطي السحابي غير مفعل.</p>
-              <p className="cloud-hint">
-                لتفعيل المزامنة، قم بإنشاء ملف `.env` في مجلد `src-tauri` يحتوي على مفاتيح Supabase الخاصة بك.
-              </p>
-            </div>
-          )}
-          
-          <p className="cloud-hint">
-            تأكد من إعداد متغيرات البيئة `SUPABASE_URL` و `SUPABASE_ANON_KEY` بشكل صحيح.
+        <h3 className="section-label">الهوية والمزامنة</h3>
+        <div className="settings-card role-card">
+          <p className="field-desc">اختر دور هذا الجهاز في المزامنة:</p>
+          <div className="role-selector">
+            <button 
+              className={`role-tab ${isMaster ? 'active' : ''}`}
+              onClick={() => updateConfig({ ...config, supabase_role: 'Master' })}
+            >
+              جهاز رئيسي (Laptop)
+            </button>
+            <button 
+              className={`role-tab ${!isMaster ? 'active' : ''}`}
+              onClick={() => updateConfig({ ...config, supabase_role: 'Peer' })}
+            >
+              جهاز تابع (Phone)
+            </button>
+          </div>
+          <p className="hint-text">
+            {isMaster 
+              ? "الجهاز الرئيسي هو الوحيد الذي يمكنه رفع البيانات إلى Supabase."
+              : "الجهاز التابع يحصل على البيانات من السحاب أو من الجهاز الرئيسي عبر Wi-Fi."}
           </p>
         </div>
       </div>
 
+      {/* ─── Supabase Section ─── */}
       <div className="settings-section">
-        <h3 className="section-label">حول ديوان</h3>
-        <div className="about-card">
-          <p className="version-text">الإصدار 0.1.0</p>
-          <p className="about-desc">
-            مساحة خاصة لحفظ وجمع أبيات الشعر العربي المفضلة، مصممة بجمالية كلاسيكية وتجربة عصرية.
-          </p>
+        <h3 className="section-label">السحابة (Supabase)</h3>
+        <div className="settings-card cloud-card">
+          <div className="input-field">
+            <label>Supabase URL</label>
+            <input 
+              type="text" 
+              value={config.supabase_url || ''} 
+              onChange={(e) => updateConfig({ ...config, supabase_url: e.target.value })}
+              placeholder="https://xxx.supabase.co"
+            />
+          </div>
+          <div className="input-field">
+            <label>API Key</label>
+            <input 
+              type="password" 
+              value={config.supabase_anon_key || ''} 
+              onChange={(e) => updateConfig({ ...config, supabase_anon_key: e.target.value })}
+              placeholder="Your anon key"
+            />
+          </div>
+          
+          {isMaster && (
+            <button 
+              className="sync-btn" 
+              onClick={syncNow} 
+              disabled={syncing || !config.supabase_url}
+            >
+              {syncing ? 'جارٍ المزامنة...' : 'مزامنة مع السحابة الآن'}
+            </button>
+          )}
+          {syncError && <p className="error-text">{syncError}</p>}
+        </div>
+      </div>
+
+      {/* ─── Local Sync Section ─── */}
+      <div className="settings-section">
+        <h3 className="section-label">المزامنة المحلية (Wi-Fi)</h3>
+        <div className="settings-card local-card">
+          {isMaster ? (
+            <div className="hub-setup">
+              <label className="toggle-label">
+                <input 
+                  type="checkbox" 
+                  checked={config.local_sync_enabled}
+                  onChange={(e) => updateConfig({ ...config, local_sync_enabled: e.target.checked })}
+                />
+                تفعيل البث (Hub)
+              </label>
+              {config.local_sync_enabled && localIp && (
+                <div className="ip-info">
+                  <p>عنوان الجهاز الحالي:</p>
+                  <code className="ip-display">{localIp}</code>
+                  <p className="hint-text">أدخل هذا العنوان في إعدادات الهاتف للمزامنة المباشرة.</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="peer-setup">
+              <div className="input-field">
+                <label>عنوان الجهاز الرئيسي (IP)</label>
+                <input 
+                  type="text" 
+                  value={config.local_hub_ip || ''} 
+                  onChange={(e) => updateConfig({ ...config, local_hub_ip: e.target.value })}
+                  placeholder="192.168.1.xxx"
+                />
+              </div>
+              <button 
+                className="sync-btn" 
+                onClick={syncNow} 
+                disabled={syncing || !config.local_hub_ip}
+              >
+                {syncing ? 'جارٍ المزامنة...' : 'مزامنة مع الكمبيوتر الآن'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

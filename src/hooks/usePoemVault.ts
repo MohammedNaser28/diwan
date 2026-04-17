@@ -32,32 +32,6 @@ export function usePoemVault() {
   const [searchQuery, setSearchQuery] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
-  const [isSyncConfigured, setIsSyncConfigured] = useState(false);
-
-  // ── Load from SQLite on mount, then kick off a background cloud sync ──────
-  useEffect(() => {
-    // 1. Show local data immediately (offline-first)
-    invoke<RustPoem[]>('get_poems')
-      .then((raw) => setPoems(raw.map(toPoem)))
-      .catch((err) => console.error('DB load error:', err));
-
-    // 2. Check if sync is configured and kick off a background cloud sync
-    invoke<boolean>('is_sync_configured').then((configured) => {
-      setIsSyncConfigured(configured);
-      if (configured) {
-        setSyncing(true);
-        setSyncError(null);
-        invoke('sync_now')
-          .then(() => invoke<RustPoem[]>('get_poems'))
-          .then((raw) => setPoems((raw as RustPoem[]).map(toPoem)))
-          .catch((err) => {
-            console.warn('Sync error (offline?):', err);
-            setSyncError(String(err));
-          })
-          .finally(() => setSyncing(false));
-      }
-    });
-  }, []);
 
   // ── Derived ──────────────────────────────────────────────────────────────
 
@@ -126,14 +100,25 @@ export function usePoemVault() {
     // Optimistic removal
     setPoems((prev) => prev.filter((p) => p.id !== id));
     await invoke('delete_poem', { id }).catch(console.error);
-    invoke('sync_now').catch(console.warn);
+    syncNow().catch(console.warn);
   }, []);
 
   const syncNow = useCallback(async () => {
     setSyncing(true);
     setSyncError(null);
     try {
-      await invoke('sync_now');
+      const config = await invoke<import('../types/config').AppConfig>('get_config');
+      
+      // 1. Try Local Hub Sync if configured (primary for peers)
+      if (config.local_hub_ip) {
+        await invoke('sync_local_hub');
+      }
+
+      // 2. Try Supabase Sync if Master or specifically enabled
+      if (config.supabase_url && config.supabase_anon_key) {
+        await invoke('sync_supabase');
+      }
+
       const raw = await invoke<RustPoem[]>('get_poems');
       setPoems(raw.map(toPoem));
     } catch (err) {
@@ -143,6 +128,15 @@ export function usePoemVault() {
       setSyncing(false);
     }
   }, []);
+
+  // ── Sync on mount ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    invoke<RustPoem[]>('get_poems')
+      .then((raw) => setPoems(raw.map(toPoem)))
+      .catch((err) => console.error('DB load error:', err));
+
+    syncNow().catch(() => {});
+  }, [syncNow]);
 
   return {
     poems,
@@ -158,7 +152,6 @@ export function usePoemVault() {
     syncNow,
     syncing,
     syncError,
-    isSyncConfigured,
     stats,
   };
 }
