@@ -56,34 +56,38 @@ pub fn seed_if_empty(conn: &Connection) -> Result<()> {
     }
 
     let now = now_ms();
-    let seeds: &[(&str, &str, &str, &[&str])] = &[
+    let seeds: &[(&str, &str, &str, &[&str], &str)] = &[
         (
             "وما المرءُ إلا حيثُ يجعلُ نفسَهُ\nفكُن طالبًا في العُلا أعلاها مقاما",
             "المتنبي", "ديوان المتنبي", &["حكمة", "فخر"],
+            "seed-poem-1-mutanabbi-merit",
         ),
         (
             "أنا البحرُ في أحشائه الدُّرُّ كامنٌ\nفهل سألوا الغوّاصَ عن صدفاتي",
-            "أبو العلاء المعري", "اللزوميات", &["فخر"],
+            "حافظ إبراهيم", "ديوان حافظ إبراهيم", &["فخر"],
+            "seed-poem-2-hafez-sea",
         ),
         (
             "على قَدْرِ أهلِ العزمِ تأتي العزائمُ\nوتأتي على قَدْرِ الكِرامِ المكارمُ",
             "المتنبي", "ديوان المتنبي", &["حكمة"],
+            "seed-poem-3-mutanabbi-resolve",
         ),
         (
             "إذا غامرتَ في شرفٍ مرومٍ\nفلا تقنع بما دون النجوم",
             "المتنبي", "ديوان المتنبي", &["حكمة", "حنين"],
+            "seed-poem-4-mutanabbi-stars",
         ),
         (
             "لكلِّ امرئٍ من دهرِهِ ما تعوَّدا\nوعادةُ سيفِ الدولةِ الطعنُ في العِدا",
             "المتنبي", "ديوان المتنبي", &["فخر", "رثاء"],
+            "seed-poem-5-mutanabbi-habit",
         ),
     ];
 
-    for (text, poet, source, tags) in seeds {
-        let id = uuid::Uuid::new_v4().to_string();
+    for (text, poet, source, tags, id) in seeds {
         let tags_json = serde_json::to_string(tags).unwrap();
         conn.execute(
-            "INSERT INTO poems (id, text, poet, source, tags, updated_at)
+            "INSERT OR IGNORE INTO poems (id, text, poet, source, tags, updated_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             params![id, text, poet, source, tags_json, now],
         )?;
@@ -151,6 +155,52 @@ pub fn soft_delete(conn: &Connection, id: &str) -> Result<()> {
         params![now, id],
     )?;
     Ok(())
+}
+
+/// Finds poems with identical text and poet, keeps the newest one, 
+/// and marks others as deleted. Returns the number of poems removed.
+pub fn deduplicate_poems(conn: &Connection) -> Result<usize> {
+    let now = now_ms();
+    // 1. Find groups of duplicates (same text and poet)
+    let mut stmt = conn.prepare(
+        "SELECT text, poet, COUNT(*) as c 
+         FROM poems 
+         WHERE deleted_at IS NULL 
+         GROUP BY text, poet 
+         HAVING c > 1"
+    )?;
+    
+    let dups: Vec<(String, String)> = stmt.query_map([], |row| {
+        Ok((row.get(0)?, row.get(1)?))
+    })?.filter_map(|r| r.ok()).collect();
+
+    let mut total_removed = 0;
+
+    for (text, poet) in dups {
+        // 2. For each group, get all IDs ordered by updated_at DESC
+        let mut id_stmt = conn.prepare(
+            "SELECT id FROM poems 
+             WHERE text = ?1 AND poet = ?2 AND deleted_at IS NULL 
+             ORDER BY updated_at DESC"
+        )?;
+        
+        let ids: Vec<String> = id_stmt.query_map(params![text, poet], |row| {
+            row.get(0)
+        })?.filter_map(|r| r.ok()).collect();
+
+        if ids.len() > 1 {
+            // Keep the first one (newest), delete the rest
+            for id_to_del in &ids[1..] {
+                conn.execute(
+                    "UPDATE poems SET deleted_at = ?1, updated_at = ?1 WHERE id = ?2",
+                    params![now, id_to_del],
+                )?;
+                total_removed += 1;
+            }
+        }
+    }
+
+    Ok(total_removed)
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

@@ -10,9 +10,10 @@ import './SettingsView.css';
 const SettingsView: FC = () => {
   const { isDesktop, ready } = usePlatform();
   const { dbPath, changing, changeLocation, error: dbError } = useDbPath();
-  const { syncNow, syncing, syncError } = usePoemVault();
+  const { syncNow, syncing, syncError, deduplicate } = usePoemVault();
   const { config, updateConfig } = useAppConfig();
   const [localIp, setLocalIp] = useState<string | null>(null);
+  const [dedupCount, setDedupCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (config?.local_sync_enabled) {
@@ -191,8 +192,30 @@ const SettingsView: FC = () => {
           )}
         </div>
       </div>
+
+      {/* ─── Maintenance Section ─── */}
+      <div className="settings-section">
+        <h3 className="section-label">صيانة البيانات</h3>
+        <div className="settings-card maintenance-card">
+          <p className="field-desc">إذا وجدت قصائد مكررة بسبب المزامنة، يمكنك دمجها هنا.</p>
+          <button 
+            className="secondary-btn" 
+            onClick={async () => {
+              const removed = await deduplicate();
+              setDedupCount(removed);
+              alert(removed > 0 ? `تم حذف ${removed} من القصائد المكررة.` : 'لم يتم العثور على تكرار.');
+            }}
+            disabled={syncing}
+          >
+            تنظيف البيانات المكررة
+          </button>
+          {dedupCount !== null && dedupCount > 0 && (
+            <p className="hint-text success">تم تنظيف {dedupCount} تكرار بنجاح.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
-};
+}
 
 export default SettingsView;

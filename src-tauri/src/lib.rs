@@ -64,6 +64,13 @@ fn delete_poem(state: State<DbState>, id: String) -> Result<(), String> {
     soft_delete(&conn, &id).map_err(|e| e.to_string())
 }
 
+/// (Manual maintenance) Merges duplicates.
+#[tauri::command]
+async fn deduplicate_poems(state: State<'_, DbState>) -> Result<usize, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    db::deduplicate_poems(&conn).map_err(|e| e.to_string())
+}
+
 
 /// Returns the current absolute path to `diwan.db`.
 #[tauri::command]
@@ -226,6 +233,7 @@ pub fn run() {
             sync_server::get_local_ip,
             get_db_path,
             pick_db_location,
+            deduplicate_poems,
             favorites::get_favorites,
             favorites::toggle_favorite,
         ])

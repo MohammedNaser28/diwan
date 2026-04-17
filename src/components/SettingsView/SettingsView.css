@@ -154,6 +154,15 @@
   margin-top: 1rem;
 }
 
+.hint-text.success {
+  color: #51cf66;
+  font-weight: 500;
+}
+
+.maintenance-card .secondary-btn {
+  margin-top: 1rem;
+}
+
 /* ─── Specifics ─── */
 .ip-info {
   margin-top: 2rem;
