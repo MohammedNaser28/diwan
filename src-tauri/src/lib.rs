@@ -207,7 +207,7 @@ pub fn run() {
             let config = settings::load_config(app.handle());
             if config.local_sync_enabled {
                 let handle = app.handle().clone();
-                tokio::spawn(async move {
+                tauri::async_runtime::spawn(async move {
                     let _ = sync_server::start_server(handle, 1421).await;
                 });
             }
