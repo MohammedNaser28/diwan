@@ -917,7 +917,7 @@ dependencies = [
 
 [[package]]
 name = "diwan"
-version = "1.4.8"
+version = "1.4.9"
 dependencies = [
  "axum",
  "dotenvy",
