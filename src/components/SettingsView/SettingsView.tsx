@@ -5,6 +5,8 @@ import { usePoemVault } from '../../hooks/usePoemVault';
 import { useAppConfig } from '../../hooks/useAppConfig';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'react';
+import { check } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 import './SettingsView.css';
 
 const SettingsView: FC = () => {
@@ -15,6 +17,11 @@ const SettingsView: FC = () => {
   const [localIp, setLocalIp] = useState<string | null>(null);
   const [dedupCount, setDedupCount] = useState<number | null>(null);
 
+  // Update State
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
   useEffect(() => {
     if (config?.local_sync_enabled) {
       invoke<string>('get_local_ip').then(setLocalIp).catch(console.warn);
@@ -24,6 +31,54 @@ const SettingsView: FC = () => {
   if (!ready || !config) return null;
 
   const isMaster = config.supabase_role === 'Master';
+
+  const handleCheckUpdate = async () => {
+    setUpdateStatus("جارٍ التحقق من التحديثات...");
+    try {
+      const update = await check();
+      if (update) {
+        setUpdateStatus(`نسخة جديدة v${update.version} متوفرة!`);
+        setUpdateAvailable(true);
+      } else {
+        setUpdateStatus("التطبيق محدث إلى آخر إصدار.");
+        setUpdateAvailable(false);
+      }
+    } catch (e) {
+      setUpdateStatus("خطأ أثناء التحقق: " + e);
+    }
+  };
+
+  const handleDownloadUpdate = async () => {
+    setDownloading(true);
+    setUpdateStatus("جارٍ التنزيل...");
+    try {
+      const update = await check();
+      if (update) {
+        let downloaded = 0;
+        let contentLength: number | undefined = 0;
+        await update.downloadAndInstall((event: any) => {
+          switch (event.event) {
+            case 'Started':
+              contentLength = event.data.contentLength;
+              setUpdateStatus(`بدأ التنزيل...`);
+              break;
+            case 'Progress':
+              downloaded += event.data.chunkLength;
+              const percent = contentLength ? Math.round((downloaded / contentLength) * 100) : 0;
+              setUpdateStatus(`جاري التحميل: ${percent}%`);
+              break;
+            case 'Finished':
+              setUpdateStatus('اكتمل التنزيل. جارٍ إعادة التشغيل...');
+              break;
+          }
+        });
+        await relaunch();
+      }
+    } catch (e) {
+      setUpdateStatus("خطأ أثناء التنزيل: " + e);
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="settings-view">
@@ -212,6 +267,37 @@ const SettingsView: FC = () => {
           {dedupCount !== null && dedupCount > 0 && (
             <p className="hint-text success">تم تنظيف {dedupCount} تكرار بنجاح.</p>
           )}
+        </div>
+      </div>
+
+      {/* ─── App Updates Section ─── */}
+      <div className="settings-section">
+        <h3 className="section-label">تحديث التطبيق</h3>
+        <div className="settings-card update-card">
+          <p className="field-desc">الإصدار الحالي: 1.2.4</p>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+            {!updateAvailable ? (
+              <button className="secondary-btn" onClick={handleCheckUpdate} disabled={updateStatus === "جارٍ التحقق من التحديثات..."}>
+                التحقق من وجود تحديثات
+              </button>
+            ) : (
+              <button className="primary-btn" onClick={handleDownloadUpdate} disabled={downloading}>
+                {downloading ? "جارٍ التنزيل..." : "تنزيل وتثبيت التحديث الآن"}
+              </button>
+            )}
+
+            {updateStatus && (
+              <p style={{ 
+                fontSize: '0.85rem', 
+                color: updateStatus.includes('خطأ') ? 'var(--red)' : 'var(--accent)',
+                textAlign: 'center',
+                marginTop: '8px'
+              }}>
+                {updateStatus}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
