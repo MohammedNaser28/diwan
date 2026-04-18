@@ -4,6 +4,7 @@ import { usePlatform } from '../../hooks/usePlatform';
 import { usePoemVault } from '../../hooks/usePoemVault';
 import { useAppConfig } from '../../hooks/useAppConfig';
 import { invoke } from '@tauri-apps/api/core';
+import { getVersion } from '@tauri-apps/api/app';
 import { useEffect, useState } from 'react';
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
@@ -16,6 +17,7 @@ const SettingsView: FC = () => {
   const { config, updateConfig } = useAppConfig();
   const [localIp, setLocalIp] = useState<string | null>(null);
   const [dedupCount, setDedupCount] = useState<number | null>(null);
+  const [version, setVersion] = useState<string>("...");
 
   // Update State
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
@@ -23,6 +25,7 @@ const SettingsView: FC = () => {
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
+    getVersion().then(setVersion).catch(console.error);
     if (config?.local_sync_enabled) {
       invoke<string>('get_local_ip').then(setLocalIp).catch(console.warn);
     }
@@ -274,7 +277,7 @@ const SettingsView: FC = () => {
       <div className="settings-section">
         <h3 className="section-label">تحديث التطبيق</h3>
         <div className="settings-card update-card">
-          <p className="field-desc">الإصدار الحالي: 1.2.4</p>
+          <p className="field-desc">الإصدار الحالي: {version}</p>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
             {!updateAvailable ? (

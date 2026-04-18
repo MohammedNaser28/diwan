@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "diwan",
-  "version": "1.2.4",
+  "version": "1.4.8",
   "identifier": "com.mohammed28.diwan",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -29,7 +29,7 @@
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEFBNzI0RTI2MTRFREM0MzYKUldRMnhPMFVKazV5cWpDcTIwOFV6Mk1tMjJhcjlxckllN3BieXVpRng2bTlNZlFFdFBPRTRZUFIK"
     }
   },
-    "bundle": {
+  "bundle": {
     "active": true,
     "targets": "all",
     "createUpdaterArtifacts": true,
