@@ -280,25 +280,44 @@ const SettingsView: FC = () => {
           <p className="field-desc">الإصدار الحالي: {version}</p>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
-            {!updateAvailable ? (
-              <button className="secondary-btn" onClick={handleCheckUpdate} disabled={updateStatus === "جارٍ التحقق من التحديثات..."}>
-                التحقق من وجود تحديثات
-              </button>
+            {!isDesktop ? (
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: '0.9rem', marginBottom: '12px', color: 'var(--text-dim)' }}>
+                  تحديثات التطبيق التلقائية متاحة لأجهزة الكمبيوتر فقط.
+                </p>
+                <a 
+                  href="https://github.com/MohammedNaser28/diwan/releases" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="secondary-btn"
+                  style={{ display: 'inline-block', width: '100%', textDecoration: 'none', textAlign: 'center' }}
+                >
+                  تحميل أحدث ملف APK (GitHub)
+                </a>
+              </div>
             ) : (
-              <button className="primary-btn" onClick={handleDownloadUpdate} disabled={downloading}>
-                {downloading ? "جارٍ التنزيل..." : "تنزيل وتثبيت التحديث الآن"}
-              </button>
-            )}
+              <>
+                {!updateAvailable ? (
+                  <button className="secondary-btn" onClick={handleCheckUpdate} disabled={updateStatus === "جارٍ التحقق من التحديثات..."}>
+                    التحقق من وجود تحديثات
+                  </button>
+                ) : (
+                  <button className="primary-btn" onClick={handleDownloadUpdate} disabled={downloading}>
+                    {downloading ? "جارٍ التنزيل..." : "تنزيل وتثبيت التحديث الآن"}
+                  </button>
+                )}
 
-            {updateStatus && (
-              <p style={{ 
-                fontSize: '0.85rem', 
-                color: updateStatus.includes('خطأ') ? 'var(--red)' : 'var(--accent)',
-                textAlign: 'center',
-                marginTop: '8px'
-              }}>
-                {updateStatus}
-              </p>
+                {updateStatus && (
+                  <p style={{ 
+                    fontSize: '0.85rem', 
+                    color: updateStatus.includes('خطأ') ? 'var(--red)' : 'var(--accent)',
+                    textAlign: 'center',
+                    marginTop: '8px'
+                  }}>
+                    {updateStatus}
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>

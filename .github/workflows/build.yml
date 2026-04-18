@@ -27,6 +27,9 @@ jobs:
         with:
           targets: aarch64-linux-android
 
+      - name: Install tauri-cli
+        run: cargo install tauri-cli --version "^2.0.0"
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -164,9 +167,16 @@ jobs:
       - name: Generate latest.json
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          # Extract signatures
-          LINUX_SIG=$(cat diwan-linux/*.AppImage.sig)
-          WIN_SIG=$(cat diwan-windows/*.msi.sig)
+          
+          # Find signatures recursively in the downloaded artifacts
+          LINUX_SIG_FILE=$(find diwan-linux -name "*.AppImage.sig" | head -n 1)
+          WIN_SIG_FILE=$(find diwan-windows -name "*.msi.sig" | head -n 1)
+          
+          if [ -z "$LINUX_SIG_FILE" ]; then echo "Error: Linux signature not found"; exit 1; fi
+          if [ -z "$WIN_SIG_FILE" ]; then echo "Error: Windows signature not found"; exit 1; fi
+          
+          LINUX_SIG=$(cat "$LINUX_SIG_FILE")
+          WIN_SIG=$(cat "$WIN_SIG_FILE")
           
           # Construct JSON
           cat <<EOF > latest.json
