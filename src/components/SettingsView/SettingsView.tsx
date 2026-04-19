@@ -13,9 +13,10 @@ import './SettingsView.css';
 const SettingsView: FC = () => {
   const { isDesktop, ready } = usePlatform();
   const { dbPath, changing, changeLocation, error: dbError } = useDbPath();
-  const { syncNow, syncing, syncError, deduplicate } = usePoemVault();
+  const { syncError, deduplicate, syncLocalNow, syncSupabaseNow, syncingLocal, syncingCloud, localSyncError, cloudSyncError } = usePoemVault();
   const { config, updateConfig } = useAppConfig();
   const [localIp, setLocalIp] = useState<string | null>(null);
+  const [serverRunning, setServerRunning] = useState(false);
   const [dedupCount, setDedupCount] = useState<number | null>(null);
   const [version, setVersion] = useState<string>("...");
 
@@ -28,6 +29,7 @@ const SettingsView: FC = () => {
     getVersion().then(setVersion).catch(console.error);
     if (config?.local_sync_enabled) {
       invoke<string>('get_local_ip').then(setLocalIp).catch(console.warn);
+      invoke<boolean>('get_server_status').then(setServerRunning).catch(console.warn);
     }
   }, [config?.local_sync_enabled]);
 
@@ -196,13 +198,14 @@ const SettingsView: FC = () => {
           {isMaster && (
             <button 
               className="sync-btn" 
-              onClick={syncNow} 
-              disabled={syncing || !config.supabase_url}
+              onClick={syncSupabaseNow} 
+              disabled={syncingCloud || !config.supabase_url}
             >
-              {syncing ? 'جارٍ المزامنة...' : 'مزامنة مع السحابة الآن'}
+              {syncingCloud ? 'جارٍ المزامنة...' : 'مزامنة مع السحابة الآن'}
             </button>
           )}
-          {syncError && <p className="error-text">{syncError}</p>}
+          {cloudSyncError && <p className="error-text">{cloudSyncError}</p>}
+          {syncError && !cloudSyncError && <p className="error-text">{syncError}</p>}
         </div>
       </div>
 
@@ -220,11 +223,30 @@ const SettingsView: FC = () => {
                 />
                 تفعيل البث (Hub)
               </label>
-              {config.local_sync_enabled && localIp && (
+              {config.local_sync_enabled && (
                 <div className="ip-info">
-                  <p>عنوان الجهاز الحالي:</p>
-                  <code className="ip-display">{localIp}</code>
-                  <p className="hint-text">أدخل هذا العنوان في إعدادات الهاتف للمزامنة المباشرة.</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        background: serverRunning ? 'var(--accent)' : '#888',
+                        boxShadow: serverRunning ? '0 0 6px var(--accent)' : 'none',
+                      }}
+                    />
+                    <span style={{ fontSize: '0.85rem', color: serverRunning ? 'var(--accent)' : 'var(--text-dim)' }}>
+                      {serverRunning ? 'الخادم يعمل' : 'الخادم غير نشط'}
+                    </span>
+                  </div>
+                  {localIp && (
+                    <>
+                      <p>عنوان الجهاز الحالي:</p>
+                      <code className="ip-display">{localIp}</code>
+                      <p className="hint-text">أدخل هذا العنوان في إعدادات الهاتف للمزامنة المباشرة.</p>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -241,11 +263,12 @@ const SettingsView: FC = () => {
               </div>
               <button 
                 className="sync-btn" 
-                onClick={syncNow} 
-                disabled={syncing || !config.local_hub_ip}
+                onClick={syncLocalNow} 
+                disabled={syncingLocal || !config.local_hub_ip}
               >
-                {syncing ? 'جارٍ المزامنة...' : 'مزامنة مع الكمبيوتر الآن'}
+                {syncingLocal ? 'جارٍ المزامنة...' : 'مزامنة مع الكمبيوتر الآن'}
               </button>
+              {localSyncError && <p className="error-text" style={{ marginTop: '8px' }}>{localSyncError}</p>}
             </div>
           )}
         </div>
@@ -263,7 +286,7 @@ const SettingsView: FC = () => {
               setDedupCount(removed);
               alert(removed > 0 ? `تم حذف ${removed} من القصائد المكررة.` : 'لم يتم العثور على تكرار.');
             }}
-            disabled={syncing}
+            disabled={syncingLocal || syncingCloud}
           >
             تنظيف البيانات المكررة
           </button>

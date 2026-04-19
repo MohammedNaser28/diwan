@@ -9,6 +9,8 @@ use rusqlite::Connection;
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
 
+pub struct ServerRunningState(pub Mutex<bool>);
+
 // ... keep existing helpers ...
 // (I will use multi_replace for better precision if needed, but let's try a full replace for the imports and commands)
 
@@ -143,6 +145,43 @@ async fn pick_db_location(_app: AppHandle, _state: State<'_, DbState>) -> Result
     }
 }
 
+// ─── Sync Server Management ───────────────────────────────────────────────────
+
+fn start_server_logic(app: AppHandle) {
+    let state = app.state::<ServerRunningState>();
+    let mut running = state.0.lock().unwrap();
+    if *running {
+        return;
+    }
+
+    let handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        // We set it to true BEFORE starting to avoid race conditions 
+        // leading to multiple bind attempts.
+        // If it fails, we'll just have it "stuck" at true for this session
+        // which is safer than repeated failed binds.
+        let _ = sync_server::start_server(handle, 1421).await;
+    });
+    *running = true;
+}
+
+#[tauri::command]
+async fn set_config(app: AppHandle, config: crate::settings::AppConfig) -> Result<(), String> {
+    let sync_enabled = config.local_sync_enabled;
+    crate::settings::save_config(&app, &config)?;
+    
+    if sync_enabled {
+        start_server_logic(app);
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+fn get_server_status(state: State<ServerRunningState>) -> bool {
+    *state.0.lock().unwrap()
+}
+
 // ─── App entry point ──────────────────────────────────────────────────────────
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -211,14 +250,13 @@ pub fn run() {
                 conn: Mutex::new(conn),
                 path: Mutex::new(db_path),
             });
+            
+            app.manage(ServerRunningState(Mutex::new(false)));
 
             // ── Start Local Sync Server if enabled ────────────────────────────
             let config = settings::load_config(app.handle());
             if config.local_sync_enabled {
-                let handle = app.handle().clone();
-                tauri::async_runtime::spawn(async move {
-                    let _ = sync_server::start_server(handle, 1421).await;
-                });
+                start_server_logic(app.handle().clone());
             }
 
             Ok(())
@@ -229,9 +267,11 @@ pub fn run() {
             delete_poem,
             sync::sync_supabase,
             sync::sync_local_hub,
+            sync::sync_now, // Registered!
             sync::is_sync_configured,
             settings::get_config,
-            settings::set_config,
+            set_config, // Renamed back to set_config
+            get_server_status,
             sync_server::get_local_ip,
             get_db_path,
             pick_db_location,

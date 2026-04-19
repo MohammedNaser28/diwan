@@ -17,6 +17,7 @@ pub async fn start_server(app: tauri::AppHandle, port: u16) -> Result<(), String
     let state = ServerState { app: app.clone() };
     
     let router = Router::new()
+        .route("/ping", get(handle_ping))
         .route("/v1/poems", get(handle_get_poems))
         .route("/v1/upsert", post(handle_upsert_poem))
         .with_state(state);
@@ -29,6 +30,10 @@ pub async fn start_server(app: tauri::AppHandle, port: u16) -> Result<(), String
         .map_err(|e| format!("Server error: {}", e))?;
     
     Ok(())
+}
+
+async fn handle_ping() -> &'static str {
+    "poetic-pong"
 }
 
 async fn handle_get_poems(State(state): State<ServerState>) -> Json<Vec<RemotePoem>> {

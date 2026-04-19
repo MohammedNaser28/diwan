@@ -34,9 +34,15 @@ interface PoemVaultContextType {
   updatePoem: (id: string, data: Omit<Poem, 'id'>) => Promise<void>;
   deletePoem: (id: string) => Promise<void>;
   syncNow: () => Promise<void>;
+  syncLocalNow: () => Promise<void>;
+  syncSupabaseNow: () => Promise<void>;
   deduplicate: () => Promise<number>;
   syncing: boolean;
+  syncingLocal: boolean;
+  syncingCloud: boolean;
   syncError: string | null;
+  localSyncError: string | null;
+  cloudSyncError: string | null;
   stats: {
     poemCount: number;
     poetCount: number;
@@ -52,7 +58,11 @@ export function PoemVaultProvider({ children }: { children: ReactNode }) {
   const [activeTag, setActiveTag] = useState<Tag>(ALL_TAG);
   const [searchQuery, setSearchQuery] = useState('');
   const [syncing, setSyncing] = useState(false);
+  const [syncingLocal, setSyncingLocal] = useState(false);
+  const [syncingCloud, setSyncingCloud] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [localSyncError, setLocalSyncError] = useState<string | null>(null);
+  const [cloudSyncError, setCloudSyncError] = useState<string | null>(null);
 
   const fetchPoems = useCallback(async () => {
     try {
@@ -67,25 +77,44 @@ export function PoemVaultProvider({ children }: { children: ReactNode }) {
     setSyncing(true);
     setSyncError(null);
     try {
-      const config = await invoke<import('../types/config').AppConfig>('get_config');
-      
-      // 1. Try Local Hub Sync
-      if (config.local_hub_ip) {
-        await invoke('sync_local_hub');
-      }
-
-      // 2. Try Supabase Sync
-      if (config.supabase_url && config.supabase_anon_key && 
-          config.supabase_url.trim() !== '' && config.supabase_anon_key.trim() !== '') {
-        await invoke('sync_supabase');
-      }
-
+      await invoke('sync_now');
       await fetchPoems();
     } catch (err) {
       console.warn('Sync error:', err);
       setSyncError(String(err));
     } finally {
       setSyncing(false);
+    }
+  }, [fetchPoems]);
+
+  const syncLocalNow = useCallback(async () => {
+    setSyncingLocal(true);
+    setLocalSyncError(null);
+    try {
+      await invoke('sync_local_hub');
+      await fetchPoems();
+    } catch (err) {
+      const msg = String(err);
+      if (msg.includes('Fetch error') || msg.includes('error sending request') || msg.includes('timed out')) {
+        setLocalSyncError('تعذّر الاتصال بالجهاز الرئيسي. تأكد من أن الكمبيوتر متصل بنفس الشبكة وأن جدار الحماية يسمح بالاتصال على المنفذ 1421.');
+      } else {
+        setLocalSyncError(msg);
+      }
+    } finally {
+      setSyncingLocal(false);
+    }
+  }, [fetchPoems]);
+
+  const syncSupabaseNow = useCallback(async () => {
+    setSyncingCloud(true);
+    setCloudSyncError(null);
+    try {
+      await invoke('sync_supabase');
+      await fetchPoems();
+    } catch (err) {
+      setCloudSyncError(String(err));
+    } finally {
+      setSyncingCloud(false);
     }
   }, [fetchPoems]);
 
@@ -109,7 +138,7 @@ export function PoemVaultProvider({ children }: { children: ReactNode }) {
     };
     setPoems((prev) => [toPoem(poem), ...prev]);
     await invoke('save_poem', { poem }).catch(console.error);
-    invoke('sync_now').catch(console.warn); // Background sync
+    invoke('sync_now').catch(console.warn);
   }, []);
 
   const updatePoem = useCallback(async (id: string, data: Omit<Poem, 'id'>) => {
@@ -178,9 +207,15 @@ export function PoemVaultProvider({ children }: { children: ReactNode }) {
     updatePoem,
     deletePoem,
     syncNow,
+    syncLocalNow,
+    syncSupabaseNow,
     deduplicate,
     syncing,
+    syncingLocal,
+    syncingCloud,
     syncError,
+    localSyncError,
+    cloudSyncError,
     stats,
   };
 

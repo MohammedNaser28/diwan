@@ -58,9 +58,10 @@ async fn run_sync_logic(
     auth_header: &str,
     can_push: bool,
     is_supabase: bool,
+    timeout_secs: u64,
 ) -> Result<SyncResult, String> {
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(15))
+        .timeout(std::time::Duration::from_secs(timeout_secs))
         .build()
         .map_err(|e| format!("HTTP client error: {e}"))?;
 
@@ -153,7 +154,7 @@ pub async fn sync_supabase(
     let can_push = matches!(config.supabase_role, SyncRole::Master);
     let auth = format!("Bearer {}", key);
 
-    run_sync_logic(&state.conn, url, key, &auth, can_push, true).await
+    run_sync_logic(&state.conn, url, key, &auth, can_push, true, 20).await
 }
 
 #[tauri::command]
@@ -170,7 +171,46 @@ pub async fn sync_local_hub(
 
     let url = format!("http://{}:1421", hub_ip);
     // Local Wi-Fi sync always pushes/pulls between Phone and Laptop
-    run_sync_logic(&state.conn, &url, "", "", true, false).await
+    // Using a shorter 5s timeout for local sync to avoid long "hanging"
+    run_sync_logic(&state.conn, &url, "", "", true, false, 5).await
+}
+
+#[tauri::command]
+pub async fn sync_now(
+    state: tauri::State<'_, crate::db::DbState>,
+    app: tauri::AppHandle,
+) -> Result<SyncResult, String> {
+    let config = crate::settings::load_config(&app);
+    let mut total_pulled = 0;
+    let mut total_pushed = 0;
+
+    // 1. Local Hub Sync
+    if let Some(hub_ip) = &config.local_hub_ip {
+        if !hub_ip.is_empty() {
+            let url = format!("http://{}:1421", hub_ip);
+            if let Ok(res) = run_sync_logic(&state.conn, &url, "", "", true, false, 5).await {
+                total_pulled += res.pulled;
+                total_pushed += res.pushed;
+            }
+        }
+    }
+
+    // 2. Supabase Sync
+    if let (Some(url), Some(key)) = (&config.supabase_url, &config.supabase_anon_key) {
+        if !url.is_empty() && !key.is_empty() {
+            let can_push = matches!(config.supabase_role, SyncRole::Master);
+            let auth = format!("Bearer {}", key);
+            if let Ok(res) = run_sync_logic(&state.conn, url, key, &auth, can_push, true, 20).await {
+                total_pulled += res.pulled;
+                total_pushed += res.pushed;
+            }
+        }
+    }
+
+    Ok(SyncResult {
+        pulled: total_pulled,
+        pushed: total_pushed,
+    })
 }
 
 #[tauri::command]

@@ -62,7 +62,4 @@ pub fn get_config(app: AppHandle) -> AppConfig {
     load_config(&app)
 }
 
-#[tauri::command]
-pub fn set_config(app: AppHandle, config: AppConfig) -> Result<(), String> {
-    save_config(&app, &config)
-}
+// set_config is now handled in lib.rs to manage server lifecycle
