@@ -108,6 +108,51 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
+      - name: Produce patched Wayland-compatible AppImage
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APPDIR="src-tauri/target/release/bundle/appimage"
+          ORIGINAL=$(ls "$APPDIR"/*.AppImage | head -1)
+          VERSION="$(echo "$ORIGINAL" | sed -E 's/.*diwan_([0-9]+\.[0-9]+\.[0-9]+)_amd64\.AppImage/\1/')"
+          echo "Original: $ORIGINAL (version $VERSION)"
+
+          # ── 2. Extract ──────────────────────────────────────────────────
+          cd "$APPDIR"
+          chmod +x "$(basename "$ORIGINAL")"
+          ./"$(basename "$ORIGINAL")" --appimage-extract > /dev/null 2>&1
+
+          # ── 3. Patch GTK hook: remove the X11 lock ──────────────────────
+          HOOK="squashfs-root/apprun-hooks/linuxdeploy-plugin-gtk.sh"
+          if [ -f "$HOOK" ]; then
+            sed -i 's/^export GDK_BACKEND=x11/# export GDK_BACKEND=x11 # removed for Wayland compat/' "$HOOK"
+            echo "Patched: $HOOK"
+            grep -n "GDK_BACKEND" "$HOOK"
+          else
+            echo "WARNING: GTK hook not found at $HOOK"
+            ls squashfs-root/apprun-hooks/ 2>/dev/null || true
+          fi
+
+          # ── 4. Repack with appimagetool ─────────────────────────────────
+          cd /tmp
+          APPIMAGETOOL="appimagetool-x86_64.AppImage"
+          wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/$APPIMAGETOOL" -O "$APPIMAGETOOL"
+          chmod +x "$APPIMAGETOOL"
+
+          APPIMAGE_EXTRACT_AND_RUN=1 \
+          ARCH=x86_64 \
+          ./"$APPIMAGETOOL" \
+            --no-appstream \
+            "$GITHUB_WORKSPACE/$APPDIR/squashfs-root" \
+            "$GITHUB_WORKSPACE/$APPDIR/diwan-${VERSION}_patched-x86_64.AppImage"
+
+          echo "Patched AppImage created"
+          ls -lh "$GITHUB_WORKSPACE/$APPDIR/diwan-${VERSION}_patched-x86_64.AppImage"
+
+          # clean up
+          rm -rf "$GITHUB_WORKSPACE/$APPDIR/squashfs-root" /tmp/$APPIMAGETOOL
+
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
